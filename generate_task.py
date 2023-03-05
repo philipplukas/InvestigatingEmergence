@@ -5,83 +5,74 @@ import random
 Create synthetic data according to the  
 Composing-Table-Lookup Task described in https://arxiv.org/abs/1802.06467
 """
+class CTLTask():
 
-FUNC_DOMAIN = ["0", "1"]
-DOMAIN_SIZE = 3
-NUM_TASKS = 8
+    def __init__(self):
+      
+        # User numbers instad of binary ["0", "1"] since they are more general
+        self.func_domain = range(2)   
+        self.domain_size = 3
+        self.num_tasks = 8
+        self.max_depth = 2
 
-FUNCTION_SYMBOLS = "abcdefgh"
-assert(len(FUNCTION_SYMBOLS) == NUM_TASKS)
+        self.function_symbols = "abcdefgh"
+        assert(len(self.function_symbols) == self.num_tasks)
 
-KEYS = list(itertools.product(FUNC_DOMAIN, repeat=DOMAIN_SIZE))
-ALL_TASKS = list(itertools.permutations(KEYS, len(FUNC_DOMAIN)**DOMAIN_SIZE))
+        self.keys = list(itertools.product(self.func_domain, repeat=self.domain_size))
 
-def generate_tasks():
-    tasks = {}
-    samples = random.sample(ALL_TASKS, NUM_TASKS)
-    for idx, symbol in enumerate(FUNCTION_SYMBOLS):
-        tasks[symbol] = dict(zip(KEYS, samples[idx]))
+        # Don't generate all tasks at once because this takes too long.
+        self.all_tasks = list(itertools.permutations(self.keys, len(self.func_domain)**self.domain_size))
 
-    return tasks
+    def generate_tasks(self):
+        tasks = {}
+        samples = random.sample(self.all_tasks, self.num_tasks)
+        for idx, symbol in enumerate(self.function_symbols):
+            tasks[symbol] = dict(zip(self.keys, samples[idx]))
 
-
-def generate_composite_tasks(base_tasks):
-    base_tasks = base_tasks.items()
-    base_tasks_prods = itertools.product(base_tasks, repeat=2)
-    comp_tasks = {}
-    for prod in base_tasks_prods:
-        name = prod[0][0] + prod[1][0]
-
-
-        outputs = []
-        for key in KEYS:
-            intermediate = prod[0][1][key]
-            final = prod[1][1][intermediate]
-            outputs.append(intermediate + final)
-        comp_tasks[name] = dict(zip(KEYS, outputs))
-
-    return comp_tasks
+        return tasks
 
 
-def infinite_samples(base_tasks, comp_tasks):
+    def infinite_samples(self, base_tasks):
 
-    base_task_prefix = "NC"
-    comp_task_prefix = "PC"
+        base_task_prefix = "NC"
+        comp_task_prefix = "PC"
 
-    while True:
-        rand  = random.random()
-        choose_base_task = True
-        if rand > 1/8:
-            choose_base_task = False
+        
+        while True:
+            rand_depth  = random.randint(1,self.max_depth+1)
 
-        if choose_base_task:
-            prefix = base_task_prefix
+            if rand_depth > 1:
+                prefix = comp_task_prefix
+            else:
+                prefix = base_task_prefix
+        
+            task_out =  ""
             choice = random.choice(list(base_tasks.keys()))
-            key = KEYS[random.randint(0,7)]
+            key = self.keys[random.randint(0,7)]
             task_in = key
-            task_out = base_tasks[choice][key]
+            task_out_step = base_tasks[choice][key]
 
-        else:
-            prefix = comp_task_prefix
-            choice = random.choice(list(comp_tasks.keys()))
-            key = KEYS[random.randint(0,7)]
-            task_in = key
-            task_out = comp_tasks[choice][key]
+            for step in range(rand_depth):
+                
+                task_out = task_out + "".join(map(str,task_out_step))
+                choice = random.choice(list(base_tasks.keys()))
+                task_out_step = base_tasks[choice][task_out_step]
 
-        complete = prefix + choice + ":" + "".join(task_in) + ". " + "".join(task_out) + "."
-        yield complete
 
-    
+            complete = prefix + choice + ":" + "".join(map(str, task_in)) + ". " + "".join(task_out) + "."
+            yield complete
+
+        
 if __name__ == "__main__":
-    print(KEYS)
 
-    base_tasks = generate_tasks()
-    comp_tasks = generate_composite_tasks(base_tasks)
+    task = CTLTask()
+
+    base_tasks = task.generate_tasks()
 
     #print(base_tasks)
     #print(comp_tasks['aa'])
 
-    iterator = infinite_samples(base_tasks, comp_tasks)
+    iterator = task.infinite_samples(base_tasks)
     for i in range(100):
         print(next(iterator))
 
