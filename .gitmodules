@@ -1,3 +1,0 @@
-[submodule "transformer-xl"]
-	path = transformer-xl
-	url = https://github.com/kimiyoung/transformer-xl.git
