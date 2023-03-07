@@ -21,10 +21,11 @@ class Vocab(object):
             line = line.lower()
 
         # empty delimiter '' will evaluate False
-        if self.delimiter == '':
-            symbols = line
-        else:
-            symbols = line.split(self.delimiter)
+        #if self.delimiter == '':
+        #    symbols = line
+        #else:
+        # symbols = line.split(self.delimiter)
+        symbols = list(line)
 
         if add_double_eos: # lm1b
             return ['<S>'] + symbols + ['<S>']
