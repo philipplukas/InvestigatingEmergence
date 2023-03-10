@@ -1,0 +1,91 @@
+====================================================================================================
+    - data : ../../data/ctl/
+    - dataset : ctl
+    - n_layer : 4
+    - n_head : 4
+    - d_head : 32
+    - d_embed : 128
+    - d_model : 128
+    - d_inner : 512
+    - dropout : 0.1
+    - dropatt : 0.0
+    - init : normal
+    - emb_init : normal
+    - init_range : 0.1
+    - emb_init_range : 0.01
+    - init_std : 0.02
+    - proj_init_std : 0.01
+    - optim : adam
+    - lr : 2e-05
+    - mom : 0.0
+    - scheduler : constant
+    - warmup_step : 0
+    - decay_rate : 0.5
+    - lr_min : 0.0
+    - clip : 0.25
+    - clip_nonemb : False
+    - max_step : 400000
+    - batch_size : 22
+    - batch_chunk : 1
+    - tgt_len : 512
+    - eval_tgt_len : 50
+    - ext_len : 0
+    - mem_len : 0
+    - not_tied : True
+    - seed : 1111
+    - cuda : True
+    - adaptive : False
+    - div_val : 1
+    - pre_lnorm : False
+    - varlen : False
+    - multi_gpu : False
+    - log_interval : 200
+    - eval_interval : 1000
+    - work_dir : LM-TFM-ctl/20230307-110317
+    - restart : False
+    - restart_dir : 
+    - debug : False
+    - same_length : False
+    - attn_type : 0
+    - clamp_len : -1
+    - eta_min : 0.0
+    - gpu0_bsz : -1
+    - max_eval_steps : -1
+    - sample_softmax : -1
+    - patience : 0
+    - finetune_v2 : False
+    - finetune_v3 : False
+    - fp16 : False
+    - static_loss_scale : 1
+    - dynamic_loss_scale : False
+    - tied : False
+    - n_token : 24
+    - n_all_param : 863000
+    - n_nonemb_param : 856576
+====================================================================================================
+#params = 863000
+#non emb params = 856576
+| epoch   2 step      200 |     71 batches | lr 2e-05 | ms/batch 378.40 | loss  2.37 | ppl    10.656
+| epoch   4 step      400 |     13 batches | lr 2e-05 | ms/batch 377.51 | loss  1.51 | ppl     4.513
+| epoch   5 step      600 |     84 batches | lr 2e-05 | ms/batch 378.30 | loss  1.23 | ppl     3.409
+| epoch   7 step      800 |     26 batches | lr 2e-05 | ms/batch 377.38 | loss  1.08 | ppl     2.942
+| epoch   8 step     1000 |     97 batches | lr 2e-05 | ms/batch 378.44 | loss  0.88 | ppl     2.407
+----------------------------------------------------------------------------------------------------
+| Eval   1 at step     1000 | time: 378.31s | valid loss  0.81 | valid ppl     2.252
+----------------------------------------------------------------------------------------------------
+| epoch  10 step     1200 |     39 batches | lr 2e-05 | ms/batch 379.13 | loss  0.73 | ppl     2.085
+| epoch  11 step     1400 |    110 batches | lr 2e-05 | ms/batch 378.50 | loss  0.66 | ppl     1.928
+| epoch  13 step     1600 |     52 batches | lr 2e-05 | ms/batch 377.44 | loss  0.62 | ppl     1.866
+| epoch  14 step     1800 |    123 batches | lr 2e-05 | ms/batch 378.29 | loss  0.60 | ppl     1.829
+| epoch  16 step     2000 |     65 batches | lr 2e-05 | ms/batch 377.72 | loss  0.59 | ppl     1.805
+----------------------------------------------------------------------------------------------------
+| Eval   2 at step     2000 | time: 378.15s | valid loss  0.63 | valid ppl     1.877
+----------------------------------------------------------------------------------------------------
+| epoch  18 step     2200 |      7 batches | lr 2e-05 | ms/batch 379.14 | loss  0.58 | ppl     1.792
+| epoch  19 step     2400 |     78 batches | lr 2e-05 | ms/batch 378.43 | loss  0.58 | ppl     1.779
+| epoch  21 step     2600 |     20 batches | lr 2e-05 | ms/batch 377.41 | loss  0.57 | ppl     1.773
+----------------------------------------------------------------------------------------------------
+Exiting from training early
+====================================================================================================
+| End of training | test loss  0.63 | test ppl     1.881
+====================================================================================================
