@@ -11,11 +11,11 @@ class CTLTask():
       
         # User numbers instad of binary ["0", "1"] since they are more general
         self.func_domain = range(2)   
-        self.domain_size = 3
-        self.num_tasks = 8
-        self.max_depth = 2
+        self.domain_size = 2
+        self.num_tasks = 4
+        self.max_depth = 1
 
-        self.function_symbols = "abcdefgh"
+        self.function_symbols = "abcd" #efgh"
         assert(len(self.function_symbols) == self.num_tasks)
 
         self.keys = list(itertools.product(self.func_domain, repeat=self.domain_size))
@@ -40,7 +40,7 @@ class CTLTask():
         seen = set()
 
         while True:
-            rand_depth  = random.randint(1,self.max_depth+1)
+            rand_depth  = random.randint(1,self.max_depth)
 
             if rand_depth > 1:
                 prefix = comp_task_prefix
@@ -49,18 +49,18 @@ class CTLTask():
         
             task_out =  ""
             choice = random.choice(list(base_tasks.keys()))
-            key = self.keys[random.randint(0,7)]
+            key = self.keys[random.randint(0,self.num_tasks-1)]
             task_in = key
             task_out_step = base_tasks[choice][key]
 
-            for step in range(rand_depth):
+            for step in range(rand_depth-1):
                 
                 task_out = task_out + "".join(map(str,task_out_step))
                 choice = random.choice(list(base_tasks.keys()))
                 task_out_step = base_tasks[choice][task_out_step]
 
 
-            complete = prefix + choice + ":" + "".join(map(str, task_in)) + ". " + "".join(task_out) + "."
+            complete = choice + ":" + "".join(map(str, task_in)) + "." + "".join(map(str,task_out_step)) + "."
             
             if rejection_sampling:
                 if complete in seen:
@@ -81,8 +81,18 @@ if __name__ == "__main__":
     #print(comp_tasks['aa'])
 
     iterator = task.infinite_samples(base_tasks)
-    for i in range(100):
-        print(next(iterator))
+
+    with open("data/ctl/train.txt", 'w') as fp:
+        for i in range(1000000):
+            fp.write(next(iterator) + "\n")
+
+    with open("data/ctl/valid.txt", 'w') as fp:
+        for i in range(2000):
+            fp.write(next(iterator) + "\n")
+
+    with open("data/ctl/test.txt", 'w') as fp:
+        for i in range(2000):
+            fp.write(next(iterator) + "\n")
 
 
 
