@@ -67,7 +67,12 @@ class Vocab(object):
             for line in f:
                 symb = line.strip().split()[0]
                 self.add_symbol(symb)
+
+        # Add space to vocabulary
+        # self.add_symbol(" ")
         self.unk_idx = self.sym2idx['<UNK>']
+        #self.add_special('<S>')
+        #self.add_special('<EOS>')
 
     def build_vocab(self):
         if self.vocab_file:
@@ -97,6 +102,9 @@ class Vocab(object):
         encoded = []
         with open(path, 'r', encoding='utf-8') as f:
             for idx, line in enumerate(f):
+
+                # Remove whitespace 
+                line = line.replace(" ", "")
                 if verbose and idx > 0 and idx % 500000 == 0:
                     print('    line {}'.format(idx))
                 symbols = self.tokenize(line, add_eos=add_eos,
