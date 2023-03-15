@@ -11,10 +11,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from transformer_xl.data_utils import get_lm_corpus
+from torch.utils.data import DataLoader
+
+#from transformer_xl.data_utils import get_lm_corpus
 from mem_transformer import MemTransformerLM
 from utils.exp_utils import create_exp_dir
 from utils.data_parallel import BalancedDataParallel
+
+from ctl_task.ctl_dataset import CTLDataset
 
 parser = argparse.ArgumentParser(description='PyTorch Transformer Language Model')
 parser.add_argument('--data', type=str, default='../data/wikitext-103',
@@ -181,17 +185,29 @@ device = torch.device('cuda' if args.cuda else 'cpu')
 ###############################################################################
 # Load data
 ###############################################################################
-corpus = get_lm_corpus(args.data, args.dataset)
-ntokens = len(corpus.vocab)
-args.n_token = ntokens
+
+#corpus = get_lm_corpus(args.data, args.dataset)
+#ntokens = len(corpus.vocab)
+#args.n_token = ntokens
 
 eval_batch_size = 10
-tr_iter = corpus.get_iterator('train', args.batch_size, args.tgt_len,
-    device=device, ext_len=args.ext_len)
-va_iter = corpus.get_iterator('valid', eval_batch_size, args.eval_tgt_len,
-    device=device, ext_len=args.ext_len)
-te_iter = corpus.get_iterator('test', eval_batch_size, args.eval_tgt_len,
-    device=device, ext_len=args.ext_len)
+# tr_iter = corpus.get_iterator('train', args.batch_size, args.tgt_len,
+#     device=device, ext_len=args.ext_len)
+# va_iter = corpus.get_iterator('valid', eval_batch_size, args.eval_tgt_len,
+#     device=device, ext_len=args.ext_len)
+# te_iter = corpus.get_iterator('test', eval_batch_size, args.eval_tgt_len,
+#     device=device, ext_len=args.ext_len)
+
+train_data = CTLDataset("data/", "train", args.tgt_len)
+valid_data = CTLDataset("data/", "valid", args.eval_len)
+test_data = CTLDataset("data/", "test", args.eval_tgt_len)
+
+tr_iter = DataLoader(train_data, args.batch_size)
+va_iter = DataLoader(valid_data, args.batch_size)
+te_iter = DataLoader(test_data, args.batch_size)
+
+ntokens = len(train_data.vocab)
+args.n_token = ntokens
 
 # adaptive softmax / embedding
 cutoffs, tie_projs = [], [False]
