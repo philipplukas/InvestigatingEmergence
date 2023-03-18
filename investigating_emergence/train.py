@@ -14,16 +14,16 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 #from transformer_xl.data_utils import get_lm_corpus
-from mem_transformer import MemTransformerLM
-from utils.exp_utils import create_exp_dir
-from utils.data_parallel import BalancedDataParallel
+from transformer_xl.pytorch.mem_transformer import MemTransformerLM
+from transformer_xl.pytorch.utils.exp_utils import create_exp_dir
+from transformer_xl.pytorch.utils.data_parallel import BalancedDataParallel
 
-from ctl_task.ctl_dataset import CTLDataset
+from ctl_task.dataset import CTLDataset
 
 parser = argparse.ArgumentParser(description='PyTorch Transformer Language Model')
 parser.add_argument('--data', type=str, default='../data/wikitext-103',
                     help='location of the data corpus')
-parser.add_argument('--dataset', type=str, default='wt103',
+parser.add_argument('--dataset', type=str, default='ctl',
                     choices=['wt103', 'lm1b', 'enwik8', 'text8', 'ctl'],
                     help='dataset name')
 parser.add_argument('--n_layer', type=int, default=12,
@@ -156,8 +156,9 @@ assert args.batch_size % args.batch_chunk == 0
 
 args.work_dir = '{}-{}'.format(args.work_dir, args.dataset)
 args.work_dir = os.path.join(args.work_dir, time.strftime('%Y%m%d-%H%M%S'))
-logging = create_exp_dir(args.work_dir,
-    scripts_to_save=['train.py', 'mem_transformer.py'], debug=args.debug)
+#logging = create_exp_dir(args.work_dir,
+#    scripts_to_save=['train.py', 'mem_transformer.py'], debug=args.debug)
+logging = create_exp_dir(args.work_dir, debug=args.debug)
 
 # Set the random seed manually for reproducibility.
 np.random.seed(args.seed)
@@ -198,9 +199,9 @@ eval_batch_size = 10
 # te_iter = corpus.get_iterator('test', eval_batch_size, args.eval_tgt_len,
 #     device=device, ext_len=args.ext_len)
 
-train_data = CTLDataset("data/", "train", args.tgt_len)
-valid_data = CTLDataset("data/", "valid", args.eval_len)
-test_data = CTLDataset("data/", "test", args.eval_tgt_len)
+train_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl_depth_1_without_rejection_sampling/"), "train", args.tgt_len)
+valid_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl_depth_1_without_rejection_sampling/"), "valid", args.eval_tgt_len)
+test_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl_depth_1_without_rejection_sampling/"), "test", args.eval_tgt_len)
 
 tr_iter = DataLoader(train_data, args.batch_size)
 va_iter = DataLoader(valid_data, args.batch_size)
@@ -440,8 +441,15 @@ def train():
         mems = [tuple() for _ in range(args.batch_chunk)]
     else:
         mems = tuple()
-    train_iter = tr_iter.get_varlen_iter() if args.varlen else tr_iter
+    #train_iter = tr_iter.get_varlen_iter() if args.varlen else tr_iter
+    train_iter = iter(tr_iter)
+
     for batch, (data, target, seq_len) in enumerate(train_iter):
+
+        # Get it  into the shape expected by the transfor-mem code
+        data = data.transpose(0,1).contiguous()
+        target = target.transpose(0,1).contiguous()
+
         model.zero_grad()
         if args.batch_chunk > 1:
             data_chunks = torch.chunk(data, args.batch_chunk, 1)
