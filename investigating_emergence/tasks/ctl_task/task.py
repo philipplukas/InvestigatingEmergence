@@ -2,6 +2,9 @@ import itertools
 import random
 import pickle
 import copy
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import shutil
 
 from torchtext.data import utils
 
@@ -15,7 +18,7 @@ class CTLTask():
       
         # User numbers instad of binary ["0", "1"] since they are more general
         self.func_domain = range(5)   
-        self.domain_size = 3
+        self.domain_size = 4
         self.num_tasks = 8
         self.max_depth = 4
 
@@ -76,13 +79,14 @@ class CTLTask():
             key = self.keys[random.randint(0,self.num_tasks-1)]
             task_in = "".join(map(str, key))
             task_out_step = base_tasks[choice][key]
+            task_in_between = ""
 
             for step in range(rand_depth-1):
-                task_in += "".join(map(str, task_out_step))
+                task_in_between += "".join(map(str, task_out_step))
                 choice = random.choice(list(base_tasks.keys()))
                 task_out_step = base_tasks[choice][task_out_step]
 
-            complete = choice + ":" + "".join(map(str, task_in)) + "." + "".join(map(str,task_out_step)) + "."
+            complete = "".join(map(str, task_in)) +  ":" + choice + ":" + ".".join(map(str,task_in_between))+ "".join(map(str,task_out_step))
             
             if rejection_sampling:
                 if complete in seen:
@@ -101,7 +105,7 @@ if __name__ == "__main__":
     base_tasks = task.generate_tasks()
     print("After base task")
     
-    with open('data/ctl/base_tasks.pickle', 'wb') as f:
+    with open('investigating_emergence/data/ctl/base_tasks.pickle', 'wb') as f:
     # Pickle the 'data' dictionary using the highest protocol available.
         pickle.dump(base_tasks, f)
 
@@ -128,12 +132,28 @@ if __name__ == "__main__":
     iterator = task.infinite_samples(base_tasks, rejection_sampling=True)
 
     print("Start generating")
-    with open("data/ctl/master.txt", 'w') as fp:
-         for i in range(150000):
+    with open("investigating_emergence/data/ctl/master.txt", 'w') as fp:
+         for i in range(21000):
              print(i)
              fp.write(next(iterator) + "\n")
 
+    # Create vocabulary
+    all_symbols = list(task.func_domain) + list(task.function_symbols) + [':', '.'] 
+    with open("investigating_emergence/data/ctl/vocab.txt", "w") as fp:
+        for symbol in all_symbols:
+            fp.write(str(symbol) + "\n")
 
+    # Split into train/validation/test
+    file_path = "investigating_emergence/data/ctl/master.txt"
+    df = pd.read_csv(file_path, sep='\n', encoding='utf8', dtype=str, keep_default_na=False, na_values='')
+    train, test = train_test_split(df, test_size=0.05)
+    train.to_csv("investigating_emergence/data/ctl/train.txt", sep='\n', encoding='utf8', 
+                header = False, index = False)
+    test.to_csv("investigating_emergence/data/ctl/valid.txt", sep='\n', encoding='utf8', 
+                header = False, index = False)
+
+    # Keep test and validation the same
+    shutil.copyfile("investigating_emergence/data/ctl/valid.txt", "investigating_emergence/data/ctl/test.txt")
 
 
 

@@ -18,13 +18,15 @@ from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 from transformer_xl.pytorch.utils.exp_utils import create_exp_dir
 from transformer_xl.pytorch.utils.data_parallel import BalancedDataParallel
 
-from ctl_task.dataset import CTLDataset
+from tasks.ctl_task.dataset import CTLDataset
+from tasks.enwik_task.dataset import EnwikDataset
+from tasks.mixed_task.dataset import MixedDataset
 
 parser = argparse.ArgumentParser(description='PyTorch Transformer Language Model')
 parser.add_argument('--data', type=str, default='../data/wikitext-103',
                     help='location of the data corpus')
 parser.add_argument('--dataset', type=str, default='ctl',
-                    choices=['wt103', 'lm1b', 'enwik8', 'text8', 'ctl'],
+                    choices=['wt103', 'lm1b', 'enwik8', 'text8', 'ctl', 'mixed'],
                     help='dataset name')
 parser.add_argument('--n_layer', type=int, default=12,
                     help='number of total layers')
@@ -199,13 +201,40 @@ eval_batch_size = 10
 # te_iter = corpus.get_iterator('test', eval_batch_size, args.eval_tgt_len,
 #     device=device, ext_len=args.ext_len)
 
-train_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl_depth_1_without_rejection_sampling/"), "train", args.tgt_len)
-valid_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl_depth_1_without_rejection_sampling/"), "valid", args.eval_tgt_len)
-test_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl_depth_1_without_rejection_sampling/"), "test", args.eval_tgt_len)
+if args.dataset == "ctl":
+    train_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "train", args.tgt_len)
+    valid_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "valid", args.eval_tgt_len)
+    test_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "test", args.eval_tgt_len)
 
-tr_iter = DataLoader(train_data, args.batch_size)
-va_iter = DataLoader(valid_data, args.batch_size)
-te_iter = DataLoader(test_data, args.batch_size)
+elif args.dataset == "enwik8":
+    train_data = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "train", args.tgt_len)
+    valid_data = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "valid", args.eval_tgt_len)
+    test_data = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "test", args.eval_tgt_len)
+
+elif args.dataset == "mixed":
+    train_data_ctl = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "train", args.tgt_len)
+    valid_data_ctl = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "valid", args.eval_tgt_len)
+    test_data_ctl = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "test", args.eval_tgt_len)
+
+    train_data_enwik = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "train", args.tgt_len)
+    valid_data_enwik = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "valid", args.eval_tgt_len)
+    test_data_enwik = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "test", args.eval_tgt_len)
+
+    train_data = MixedDataset(train_data_ctl, train_data_enwik, args.batch_size, 0.4)
+    valid_data = MixedDataset(valid_data_ctl, valid_data_enwik, args.batch_size, 0.4)
+    test_data = MixedDataset(test_data_ctl, test_data_enwik, 0.4)
+
+if args.dataset == "mixed":
+    # This data already comes in batched from
+    tr_iter = DataLoader(train_data, batch_size=None)
+    va_iter = DataLoader(valid_data, batch_size=None)
+    te_iter = DataLoader(test_data, batch_size=None)
+
+else: 
+     # This data already comes in batched from
+    tr_iter = DataLoader(train_data, args.batch_size)
+    va_iter = DataLoader(valid_data, args.batch_size)
+    te_iter = DataLoader(test_data, args.batch_size)
 
 ntokens = len(train_data.vocab)
 args.n_token = ntokens
