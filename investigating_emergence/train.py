@@ -26,7 +26,7 @@ from tasks.mixed_task.dataset import MixedDataset
 from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 import init
 
-args, logging, optimizer, optimizer_sparse, model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device = init.init()
+args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device = init.init()
 
 
 # start a new wandb run to track this script
@@ -40,6 +40,11 @@ wandb.init(
     "dataset": "enwik8",
     }
 )
+
+# In case there is an exception, still finish wandb run
+def notify_exception(type, value, tb):
+    wandb.finish()
+sys.excepthook = notify_exception
 
 
 logging('=' * 100)
@@ -81,7 +86,12 @@ def evaluate(eval_iter):
                 break
             ret = model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
-            loss = (loss*mask).mean()
+
+            # Check if mask is in use
+            if mask[0].item() != -1:
+                loss = (loss*mask).mean()
+            else:
+                loss = loss.mean()
        
             total_loss += seq_len * loss.float().item()
             total_len += seq_len
@@ -248,3 +258,6 @@ else:
     logging('| End of training | test loss {:5.2f} | test ppl {:9.3f}'.format(
         test_loss, math.exp(test_loss)))
 logging('=' * 100)
+
+# Cleanup wandb 
+wandb.finish()

@@ -1,0 +1,56 @@
+2023-03-23 15:25:25,300 INFO    StreamThr :21193 [internal.py:wandb_internal():90] W&B internal server running at pid: 21193, started at: 2023-03-23 15:25:25.299303
+2023-03-23 15:25:25,309 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status
+2023-03-23 15:25:25,312 INFO    WriterThread:21193 [datastore.py:open_for_write():85] open: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/run-eok8bd2u.wandb
+2023-03-23 15:25:25,314 DEBUG   SenderThread:21193 [sender.py:send():336] send: header
+2023-03-23 15:25:25,328 DEBUG   SenderThread:21193 [sender.py:send():336] send: run
+2023-03-23 15:25:25,770 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: check_version
+2023-03-23 15:25:25,772 INFO    SenderThread:21193 [dir_watcher.py:__init__():219] watching files in: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files
+2023-03-23 15:25:25,772 INFO    SenderThread:21193 [sender.py:_start_run_threads():1081] run started: eok8bd2u with start time 1679581525.2807
+2023-03-23 15:25:25,772 DEBUG   SenderThread:21193 [sender.py:send_request():363] send_request: summary_record
+2023-03-23 15:25:25,774 INFO    SenderThread:21193 [sender.py:_save_file():1332] saving file wandb-summary.json with policy end
+2023-03-23 15:25:25,775 DEBUG   SenderThread:21193 [sender.py:send_request():363] send_request: check_version
+2023-03-23 15:25:25,932 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: run_start
+2023-03-23 15:25:25,943 ERROR   HandlerThread:21193 [gpu.py:is_available():339] Error initializing NVML: Driver Not Loaded
+2023-03-23 15:25:25,945 DEBUG   HandlerThread:21193 [system_info.py:__init__():31] System info init
+2023-03-23 15:25:25,945 DEBUG   HandlerThread:21193 [system_info.py:__init__():46] System info init done
+2023-03-23 15:25:25,945 INFO    HandlerThread:21193 [system_monitor.py:start():183] Starting system monitor
+2023-03-23 15:25:25,946 INFO    HandlerThread:21193 [system_monitor.py:probe():204] Collecting system info
+2023-03-23 15:25:25,951 INFO    SystemMonitor:21193 [system_monitor.py:_start():147] Starting system asset monitoring threads
+2023-03-23 15:25:25,952 DEBUG   HandlerThread:21193 [system_info.py:probe():195] Probing system
+2023-03-23 15:25:25,956 INFO    SystemMonitor:21193 [interfaces.py:start():187] Started cpu monitoring
+2023-03-23 15:25:25,960 INFO    SystemMonitor:21193 [interfaces.py:start():187] Started disk monitoring
+2023-03-23 15:25:25,963 INFO    SystemMonitor:21193 [interfaces.py:start():187] Started memory monitoring
+2023-03-23 15:25:25,965 DEBUG   HandlerThread:21193 [system_info.py:_probe_git():180] Probing git
+2023-03-23 15:25:25,966 INFO    SystemMonitor:21193 [interfaces.py:start():187] Started network monitoring
+2023-03-23 15:25:25,996 DEBUG   HandlerThread:21193 [system_info.py:_probe_git():188] Probing git done
+2023-03-23 15:25:25,997 DEBUG   HandlerThread:21193 [system_info.py:probe():240] Probing system done
+2023-03-23 15:25:25,997 DEBUG   HandlerThread:21193 [system_monitor.py:probe():213] {'os': 'Linux-3.10.0-1160.88.1.el7.x86_64-x86_64-with-centos-7.9.2009-Core', 'python': '3.7.4', 'heartbeatAt': '2023-03-23T14:25:25.952787', 'startedAt': '2023-03-23T14:25:25.200409', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/train.py', 'codePath': 'investigating_emergence/train.py', 'git': {'remote': 'https://github.com/philipplukas/InvestigatingEmergence.git', 'commit': 'b6bb077d748e868e1f23b36a40209baf4462518b'}, 'email': None, 'root': '/cluster/home/guphilip/SemesterProject/InvestigatingEmergence', 'host': 'eu-login-29', 'username': 'guphilip', 'executable': '/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/env/bin/python', 'cpu_count': 4, 'cpu_count_logical': 4, 'cpu_freq': {'current': 3679.20625, 'min': 800.0, 'max': 3800.0}, 'cpu_freq_per_core': [{'current': 3676.861, 'min': 800.0, 'max': 3800.0}, {'current': 3678.1, 'min': 800.0, 'max': 3800.0}, {'current': 3665.71, 'min': 800.0, 'max': 3800.0}, {'current': 3688.897, 'min': 800.0, 'max': 3800.0}], 'disk': {'total': 9.990234375, 'used': 3.401275634765625}, 'memory': {'total': 31.34878921508789}}
+2023-03-23 15:25:25,997 INFO    HandlerThread:21193 [system_monitor.py:probe():214] Finished collecting system info
+2023-03-23 15:25:25,997 INFO    HandlerThread:21193 [system_monitor.py:probe():217] Publishing system info
+2023-03-23 15:25:25,997 DEBUG   HandlerThread:21193 [system_info.py:_save_pip():52] Saving list of pip packages installed into the current environment
+2023-03-23 15:25:25,999 DEBUG   HandlerThread:21193 [system_info.py:_save_pip():67] Saving pip packages done
+2023-03-23 15:25:26,002 INFO    HandlerThread:21193 [system_monitor.py:probe():219] Finished publishing system info
+2023-03-23 15:25:26,011 DEBUG   SenderThread:21193 [sender.py:send():336] send: files
+2023-03-23 15:25:26,012 INFO    SenderThread:21193 [sender.py:_save_file():1332] saving file wandb-metadata.json with policy now
+2023-03-23 15:25:26,033 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: stop_status
+2023-03-23 15:25:26,034 DEBUG   SenderThread:21193 [sender.py:send_request():363] send_request: stop_status
+2023-03-23 15:25:26,230 DEBUG   SenderThread:21193 [sender.py:send():336] send: telemetry
+2023-03-23 15:25:26,598 INFO    wandb-upload_0:21193 [upload_job.py:push():138] Uploaded file /tmp/tmpj59y5jfgwandb/wq4dr324-wandb-metadata.json
+2023-03-23 15:25:26,781 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_created():278] file/dir created: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/output.log
+2023-03-23 15:25:26,782 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_created():278] file/dir created: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/wandb-summary.json
+2023-03-23 15:25:26,782 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_created():278] file/dir created: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/wandb-metadata.json
+2023-03-23 15:25:26,782 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_created():278] file/dir created: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/requirements.txt
+2023-03-23 15:25:28,779 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_modified():295] file/dir modified: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/output.log
+2023-03-23 15:25:30,387 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report
+2023-03-23 15:25:36,005 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report
+2023-03-23 15:25:36,786 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_modified():295] file/dir modified: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/output.log
+2023-03-23 15:25:41,013 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report
+2023-03-23 15:25:41,028 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: stop_status
+2023-03-23 15:25:41,029 DEBUG   SenderThread:21193 [sender.py:send_request():363] send_request: stop_status
+2023-03-23 15:25:46,206 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report
+2023-03-23 15:25:51,207 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report
+2023-03-23 15:25:56,030 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: stop_status
+2023-03-23 15:25:56,031 DEBUG   SenderThread:21193 [sender.py:send_request():363] send_request: stop_status
+2023-03-23 15:25:56,219 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report
+2023-03-23 15:25:56,803 INFO    Thread-18 :21193 [dir_watcher.py:_on_file_modified():295] file/dir modified: /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/wandb/run-20230323_152525-eok8bd2u/files/config.yaml
+2023-03-23 15:26:01,423 DEBUG   HandlerThread:21193 [handler.py:handle_request():144] handle_request: status_report

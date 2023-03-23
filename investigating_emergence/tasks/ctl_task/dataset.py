@@ -117,10 +117,12 @@ class CTLDataset(IterableDataset):
 
         while self.curr_idx < len(self):
             next_segment = self[self.curr_idx]
-            next_segment_mask = self.masks[self.curr_idx]
+            if self.eval_mode:
+                next_segment_mask = self.masks[self.curr_idx]
 
             next_segment = remaining + next_segment
-            next_segment_mask = remaining_mask + next_segment_mask
+            if self.eval_mode:
+                next_segment_mask = remaining_mask + next_segment_mask
 
             len_segment = len(next_segment)
 
@@ -131,14 +133,18 @@ class CTLDataset(IterableDataset):
             if self.current_len + len_segment < self.target_len:
                 self.curr_idx += 1
                 current_text += next_segment
-                current_mask += next_segment_mask
+                if self.eval_mode:
+                    current_mask += next_segment_mask
                 self.current_len += len_segment
                 continue
 
             # Exactly the same length, just return and increase the state counter
             elif self.current_len + len_segment == self.target_len:
                 self.curr_idx += 1
-                yield self.preprocess(current_text + next_segment), self.preprocess_mask(current_mask + next_segment_mask)
+                if self.eval_mode:
+                    yield self.preprocess(current_text + next_segment), self.preprocess_mask(current_mask + next_segment_mask)
+                else:
+                    yield self.preprocess(current_text + next_segment)
 
                 current_text = []
                 current_mask = []
@@ -150,14 +156,18 @@ class CTLDataset(IterableDataset):
                 assert self.current_len + len_segment > self.target_len
 
                 current_text += next_segment[:self.target_len-self.current_len]
-                current_mask += next_segment_mask[:self.target_len-self.current_len]
+                if self.eval_mode:
+                    current_mask += next_segment_mask[:self.target_len-self.current_len]
 
                 remaining = next_segment[self.target_len-self.current_len:]
-                remaining_mask = next_segment_mask[self.target_len-self.current_len:]
+                if self.eval_mode:
+                    remaining_mask = next_segment_mask[self.target_len-self.current_len:]
 
                 assert len(current_text) == self.target_len
-                yield self.preprocess(current_text), self.preprocess_mask(current_mask)
-
+                if self.eval_mode:
+                    yield self.preprocess(current_text), self.preprocess_mask(current_mask)
+                else:
+                    yield self.preprocess(current_text)
                 current_text = []
                 current_mask = []
                 self.current_len = 0
@@ -166,7 +176,10 @@ class CTLDataset(IterableDataset):
 
         # Make sure that there is no remaining data
         if len(remaining) > 0:
-            yield self.preprocess(remaining), self.preprocess_mask(remaining_mask)
+            if self.eval_mode:
+                yield self.preprocess(remaining), self.preprocess_mask(remaining_mask)
+            else:
+                yield self.preprocess(remaining)
 
         # No more data samples available
         #raise StopIteration
@@ -179,7 +192,10 @@ class CTLDataset(IterableDataset):
     def __next__(self):
 
         try:
-            next_sample, next_sample_mask = next(self.internal_generator)
+            if self.eval_mode:
+                next_sample, next_sample_mask = next(self.internal_generator)
+            else:
+                next_sample = next(self.internal_generator)
         except StopIteration:
             #print("raising stop")
             raise StopIteration()
@@ -192,13 +208,20 @@ class CTLDataset(IterableDataset):
             train_output = torch.cat([next_sample[1:],
                                     self.preprocess([self[self.curr_idx+1][0]])])
             
-            eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[self.curr_idx+1][0]])])
+            if self.eval_mode:
+                eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[self.curr_idx+1][0]])])
             
             assert len(train_input) == len(train_output)
             assert len(train_input) == self.target_len
-            assert len(eval_mask) == len(train_output)
+            if self.eval_mode:
+                assert len(eval_mask) == len(train_output)
 
-            return train_input, train_output, -1, eval_mask
+            if self.eval_mode:
+                return train_input, train_output, -1, eval_mask
+            
+            # Return -1 instead of none, since pytorch doesn't recognize None
+            else:
+                return train_input, train_output, -1, -1
             
         # No following data line, this is the last one.
          

@@ -1,0 +1,33 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.14.0
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.7.4
+    start_time: 1679581525.2807
+    t:
+      1:
+      - 1
+      - 40
+      - 55
+      2:
+      - 1
+      - 40
+      - 55
+      3:
+      - 16
+      - 23
+      4: 3.7.4
+      5: 0.14.0
+      8:
+      - 5
+dataset:
+  desc: null
+  value: enwik8
+learning_rate:
+  desc: null
+  value: 2.0e-05

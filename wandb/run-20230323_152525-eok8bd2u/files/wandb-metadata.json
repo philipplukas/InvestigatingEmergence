@@ -1,0 +1,57 @@
+{
+    "os": "Linux-3.10.0-1160.88.1.el7.x86_64-x86_64-with-centos-7.9.2009-Core",
+    "python": "3.7.4",
+    "heartbeatAt": "2023-03-23T14:25:25.952787",
+    "startedAt": "2023-03-23T14:25:25.200409",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/train.py",
+    "codePath": "investigating_emergence/train.py",
+    "git": {
+        "remote": "https://github.com/philipplukas/InvestigatingEmergence.git",
+        "commit": "b6bb077d748e868e1f23b36a40209baf4462518b"
+    },
+    "email": null,
+    "root": "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence",
+    "host": "eu-login-29",
+    "username": "guphilip",
+    "executable": "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/env/bin/python",
+    "cpu_count": 4,
+    "cpu_count_logical": 4,
+    "cpu_freq": {
+        "current": 3679.20625,
+        "min": 800.0,
+        "max": 3800.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3676.861,
+            "min": 800.0,
+            "max": 3800.0
+        },
+        {
+            "current": 3678.1,
+            "min": 800.0,
+            "max": 3800.0
+        },
+        {
+            "current": 3665.71,
+            "min": 800.0,
+            "max": 3800.0
+        },
+        {
+            "current": 3688.897,
+            "min": 800.0,
+            "max": 3800.0
+        }
+    ],
+    "disk": {
+        "total": 9.990234375,
+        "used": 3.401275634765625
+    },
+    "memory": {
+        "total": 31.34878921508789
+    }
+}

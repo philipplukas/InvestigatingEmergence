@@ -76,7 +76,7 @@ class CTLTask():
         
             task_out =  ""
             choice = random.choice(list(base_tasks.keys()))
-            key = self.keys[random.randint(0,self.num_tasks-1)]
+            key = self.keys[random.randint(0,(len(self.func_domain)**self.domain_size)-1)]
             task_in = "".join(map(str, key))
             task_out_step = base_tasks[choice][key]
             task_in_between = ""
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     print("Start generating")
     with open("investigating_emergence/data/ctl/master.txt", 'w') as fp:
          with open("investigating_emergence/data/ctl/master_mask.txt", 'w') as fp2:
-            for i in range(21000):
+            for i in range(110000):
                 print(i)
                 segment, mask = next(iterator)
                 fp.write(segment + "\n")
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     df2 = pd.read_csv(file_path_mask, sep='\n', encoding='utf8', dtype=str, keep_default_na=False, na_values='', names=['mask'])
     common_df = df.merge(df2, left_index=True, right_index=True)
 
-    train, test = train_test_split(common_df, test_size=0.05)
+    train, test = train_test_split(common_df, test_size=0.1)
     train['task'].to_csv("investigating_emergence/data/ctl/train.txt", sep='\n', encoding='utf8', 
                 header = False, index = False)
     test['task'].to_csv("investigating_emergence/data/ctl/valid.txt", sep='\n', encoding='utf8', 

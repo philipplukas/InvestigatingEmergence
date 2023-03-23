@@ -12,7 +12,7 @@ Currently only handling fixed target_len
 """
 class EnwikDataset(CTLDataset):
 
-    def __init__(self, dataset_dir, split, target_len, device):
+    def __init__(self, dataset_dir, split, target_len, device, eval_mode=False):
 
         # super(EnwikDataset, self).__init__(dataset_dir, split, target_len)
 
@@ -34,6 +34,7 @@ class EnwikDataset(CTLDataset):
         self.target_len = target_len
 
         self.device = device
+        self.eval_mode = eval_mode
 
     def tokenize(self, raw: str) -> List[str]:
         return raw.strip().split()

@@ -237,6 +237,8 @@ def init():
     ntokens = len(train_data.get_vocab())
     args.n_token = ntokens
 
+    logging("Data set loaded")
+
     # adaptive softmax / embedding
     cutoffs, tie_projs = [], [False]
     if args.adaptive:
@@ -417,4 +419,4 @@ def init():
             print('Optimizer was not saved. Start from scratch.')
 
 
-    return args, logging, optimizer, None, model, tr_iter, va_iter, te_iter, scheduler, None, device
+    return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, scheduler, None, device
