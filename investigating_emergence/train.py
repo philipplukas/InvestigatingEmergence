@@ -4,6 +4,7 @@ import time
 import math
 import os, sys
 import itertools
+import wandb
 
 import numpy as np
 
@@ -26,6 +27,20 @@ from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 import init
 
 args, logging, optimizer, optimizer_sparse, model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device = init.init()
+
+
+# start a new wandb run to track this script
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="investigating-emergence",
+    
+    # track hyperparameters and run metadata
+    config={
+    "learning_rate": 2e-05,
+    "dataset": "enwik8",
+    }
+)
+
 
 logging('=' * 100)
 for k, v in args.__dict__.items():
@@ -161,8 +176,7 @@ def train():
             train_loss = 0
             log_start_time = time.time()
 
-        #if train_step % args.eval_interval == 0:
-        if train_step % 2 == 0:
+        if train_step % args.eval_interval == 0:
             val_loss = evaluate(va_iter)
             logging('-' * 100)
             log_str = '| Eval {:3d} at step {:>8d} | time: {:5.2f}s ' \
@@ -175,6 +189,10 @@ def train():
                 log_str += ' | valid ppl {:9.3f}'.format(math.exp(val_loss))
             logging(log_str)
             logging('-' * 100)
+
+            # log metrics to wandb
+            wandb.log({"acc": val_loss, "ppl": math.exp(val_loss)})
+
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:
                 if not args.debug:

@@ -417,4 +417,4 @@ def init():
             print('Optimizer was not saved. Start from scratch.')
 
 
-    return args, logging, optimizer, optimizer_sparse, model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device
+    return args, logging, optimizer, None, model, tr_iter, va_iter, te_iter, scheduler, None, device

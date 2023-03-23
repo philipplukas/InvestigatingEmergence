@@ -7,8 +7,8 @@
 
 srun python train.py \
         --cuda \
-        --data data/ctl/ \
-        --dataset ctl \
+        --data data/enwik8/ \
+        --dataset enwik8 \
         --n_layer 6 \
         --d_model 128 \
         --n_head 8 \
@@ -20,11 +20,11 @@ srun python train.py \
         --lr 2e-05 \
         --warmup_step 0 \
         --max_step 30000 \
-        --tgt_len 5 \
-	--eval_tgt_len 5 \
+        --tgt_len 128 \
+	--eval_tgt_len 128 \
 	--ext_len 0 \
         --scheduler cosine \
         --mem_len 0 \
 	--attn_type 2 \
         --batch_size 20 \
-        --eval-interval 1000
+        --eval-interval 100

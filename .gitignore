@@ -1,3 +1,4 @@
 env/**
 investigating_emergence/data/enwik8/**
 *.swp
+investigating_emergence/wandb/**

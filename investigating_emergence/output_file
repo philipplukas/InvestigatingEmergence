@@ -1,3 +1,82 @@
-slurmstepd: error: *** STEP 12587223.0 ON eu-lo-s4-083 CANCELLED AT 2023-03-21T15:58:21 ***
-slurmstepd: error: *** JOB 12587223 ON eu-lo-s4-083 CANCELLED AT 2023-03-21T15:58:21 ***
+wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.14.0
+wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/wandb/run-20230323_145509-pueixtl5
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run major-sunset-1
+wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
+wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/pueixtl5
+Experiment dir : LM-TFM-enwik8/20230323-145443
+====================================================================================================
+    - data : data/enwik8/
+    - dataset : enwik8
+    - n_layer : 6
+    - n_head : 8
+    - d_head : 128
+    - d_embed : 128
+    - d_model : 128
+    - d_inner : 256
+    - dropout : 0.1
+    - dropatt : 0.0
+    - init : normal
+    - emb_init : normal
+    - init_range : 0.1
+    - emb_init_range : 0.01
+    - init_std : 0.02
+    - proj_init_std : 0.01
+    - optim : adam
+    - lr : 2e-05
+    - mom : 0.0
+    - scheduler : cosine
+    - warmup_step : 0
+    - decay_rate : 0.5
+    - lr_min : 0.0
+    - clip : 0.25
+    - clip_nonemb : False
+    - max_step : 30000
+    - batch_size : 20
+    - batch_chunk : 1
+    - tgt_len : 5
+    - eval_tgt_len : 5
+    - ext_len : 0
+    - mem_len : 0
+    - not_tied : False
+    - seed : 1111
+    - cuda : True
+    - adaptive : False
+    - div_val : 1
+    - pre_lnorm : False
+    - varlen : False
+    - multi_gpu : False
+    - log_interval : 200
+    - eval_interval : 1000
+    - work_dir : LM-TFM-enwik8/20230323-145443
+    - restart : False
+    - restart_dir : 
+    - debug : False
+    - same_length : False
+    - attn_type : 2
+    - clamp_len : -1
+    - eta_min : 0.0
+    - gpu0_bsz : -1
+    - max_eval_steps : -1
+    - sample_softmax : -1
+    - patience : 0
+    - finetune_v2 : False
+    - finetune_v3 : False
+    - fp16 : False
+    - static_loss_scale : 1
+    - dynamic_loss_scale : False
+    - tied : True
+    - n_token : 256
+    - n_all_param : 3577344
+    - n_nonemb_param : 3544320
+====================================================================================================
+#params = 3577344
+#non emb params = 3544320
+wandb: Waiting for W&B process to finish... (failed 1). Press Control-C to abort syncing.
+wandb: Network error (TransientError), entering retry loop.
+wandb: Network error (TransientError), entering retry loop.
+wandb: Network error (TransientError), entering retry loop.
+slurmstepd: error: *** STEP 12781406.0 ON eu-lo-s4-083 CANCELLED AT 2023-03-23T15:01:55 ***
+slurmstepd: error: *** JOB 12781406 ON eu-lo-s4-083 CANCELLED AT 2023-03-23T15:01:55 ***
 srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
