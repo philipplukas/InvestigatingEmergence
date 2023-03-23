@@ -3,11 +3,11 @@
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --output=output_file
-#SBATCH --mem-per-cpu=8G
+#SBATCH --mem-per-cpu=16G
 
 srun python train.py \
         --cuda \
-        --data ../../data/ctl/ \
+        --data data/ctl/ \
         --dataset ctl \
         --n_layer 6 \
         --d_model 128 \
@@ -26,5 +26,5 @@ srun python train.py \
         --scheduler cosine \
         --mem_len 0 \
 	--attn_type 2 \
-        --batch_size 200 \
+        --batch_size 20 \
         --eval-interval 1000

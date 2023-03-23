@@ -1,0 +1,3 @@
+slurmstepd: error: *** STEP 12587223.0 ON eu-lo-s4-083 CANCELLED AT 2023-03-21T15:58:21 ***
+slurmstepd: error: *** JOB 12587223 ON eu-lo-s4-083 CANCELLED AT 2023-03-21T15:58:21 ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.

@@ -1,5 +1,7 @@
 import random
+import torch
 from torch.utils.data import IterableDataset, DataLoader
+
 
 
 """
@@ -15,6 +17,9 @@ class MixedDataset(IterableDataset):
         self.data_laoder2 = iter(DataLoader(data_task2, batch_size))
         self.task_ratio = task_ratio
         random.seed(7)
+
+    def get_vocab(self):
+        return range(256)
 
     def __iter__(self):
         return self

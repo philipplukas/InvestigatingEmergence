@@ -22,6 +22,8 @@ from tasks.ctl_task.dataset import CTLDataset
 from tasks.enwik_task.dataset import EnwikDataset
 from tasks.mixed_task.dataset import MixedDataset
 
+BASE_PATH = os.path.dirname(__file__)
+
 parser = argparse.ArgumentParser(description='PyTorch Transformer Language Model')
 parser.add_argument('--data', type=str, default='../data/wikitext-103',
                     help='location of the data corpus')
@@ -202,27 +204,27 @@ eval_batch_size = 10
 #     device=device, ext_len=args.ext_len)
 
 if args.dataset == "ctl":
-    train_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "train", args.tgt_len)
-    valid_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "valid", args.eval_tgt_len)
-    test_data = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "test", args.eval_tgt_len)
+    train_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device)
+    valid_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device)
+    test_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device)
 
 elif args.dataset == "enwik8":
-    train_data = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "train", args.tgt_len)
-    valid_data = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "valid", args.eval_tgt_len)
-    test_data = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "test", args.eval_tgt_len)
+    train_data = EnwikDataset(os.path.join(BASE_PATH,"data/enwik8/"), "train", args.tgt_len, device)
+    valid_data = EnwikDataset(os.path.join(BASE_PATH,"data/enwik8/"), "valid", args.eval_tgt_len, device)
+    test_data = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "test", args.eval_tgt_len, device)
 
 elif args.dataset == "mixed":
-    train_data_ctl = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "train", args.tgt_len)
-    valid_data_ctl = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "valid", args.eval_tgt_len)
-    test_data_ctl = CTLDataset(os.path.abspath("investigating_emergence/data/ctl/"), "test", args.eval_tgt_len)
+    train_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device)
+    valid_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device)
+    test_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device)
 
-    train_data_enwik = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "train", args.tgt_len)
-    valid_data_enwik = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "valid", args.eval_tgt_len)
-    test_data_enwik = EnwikDataset(os.path.abspath("investigating_emergence/data/enwik8/"), "test", args.eval_tgt_len)
+    train_data_enwik = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "train", args.tgt_len, device)
+    valid_data_enwik = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "valid", args.eval_tgt_len, device)
+    test_data_enwik = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "test", args.eval_tgt_len, device)
 
     train_data = MixedDataset(train_data_ctl, train_data_enwik, args.batch_size, 0.4)
     valid_data = MixedDataset(valid_data_ctl, valid_data_enwik, args.batch_size, 0.4)
-    test_data = MixedDataset(test_data_ctl, test_data_enwik, 0.4)
+    test_data = MixedDataset(test_data_ctl, test_data_enwik, args.batch_size, 0.4)
 
 if args.dataset == "mixed":
     # This data already comes in batched from
@@ -236,7 +238,7 @@ else:
     va_iter = DataLoader(valid_data, args.batch_size)
     te_iter = DataLoader(test_data, args.batch_size)
 
-ntokens = len(train_data.vocab)
+ntokens = len(train_data.get_vocab())
 args.n_token = ntokens
 
 # adaptive softmax / embedding
@@ -446,12 +448,19 @@ def evaluate(eval_iter):
     total_len, total_loss = 0, 0.
     with torch.no_grad():
         mems = tuple()
-        for i, (data, target, seq_len) in enumerate(eval_iter):
+        for i, (data, target, seq_len, mask) in enumerate(eval_iter):
+
+            # seq_len should only be one number
+            # But since we use automati batching we get duplicates
+            # Just extract the first element
+            seq_len = seq_len[0].item()
+
             if args.max_eval_steps > 0 and i >= args.max_eval_steps:
                 break
             ret = model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
-            loss = loss.mean()
+            loss = (loss*mask).mean()
+       
             total_loss += seq_len * loss.float().item()
             total_len += seq_len
 
@@ -473,7 +482,7 @@ def train():
     #train_iter = tr_iter.get_varlen_iter() if args.varlen else tr_iter
     train_iter = iter(tr_iter)
 
-    for batch, (data, target, seq_len) in enumerate(train_iter):
+    for batch, (data, target, seq_len, _) in enumerate(train_iter):
 
         # Get it  into the shape expected by the transfor-mem code
         data = data.transpose(0,1).contiguous()
@@ -545,7 +554,8 @@ def train():
             train_loss = 0
             log_start_time = time.time()
 
-        if train_step % args.eval_interval == 0:
+        #if train_step % args.eval_interval == 0:
+        if train_step % 2 == 0:
             val_loss = evaluate(va_iter)
             logging('-' * 100)
             log_str = '| Eval {:3d} at step {:>8d} | time: {:5.2f}s ' \

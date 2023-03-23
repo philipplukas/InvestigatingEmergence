@@ -17,10 +17,10 @@ class CTLTask():
     def __init__(self):
       
         # User numbers instad of binary ["0", "1"] since they are more general
-        self.func_domain = range(5)   
+        self.func_domain = range(8)   
         self.domain_size = 4
         self.num_tasks = 8
-        self.max_depth = 4
+        self.max_depth = 10
 
         self.function_symbols = "abcdefgh"
         assert(len(self.function_symbols) == self.num_tasks)
@@ -86,15 +86,18 @@ class CTLTask():
                 choice = random.choice(list(base_tasks.keys()))
                 task_out_step = base_tasks[choice][task_out_step]
 
-            complete = "".join(map(str, task_in)) +  ":" + choice + ":" + ".".join(map(str,task_in_between))+ "".join(map(str,task_out_step))
-            
+            #complete = "".join(map(str, task_in)) +  ":" + choice + ":" + ".".join(map(str,task_in_between))+ "".join(map(str,task_out_step))
+            complete = "".join(map(str, task_in)) +  ":" + choice + ":" + "".join(map(str,task_out_step))
+            mask = len(task_in)*'0' + '0'  + len(choice)*'0' + '0' + len(task_out_step)*'1'
+            assert len(complete) == len(mask)
+
             if rejection_sampling:
                 if complete in seen:
                     continue
                 else:
                     seen.add(complete)
             
-            yield complete
+            yield complete, mask
 
         
 if __name__ == "__main__":
@@ -133,9 +136,12 @@ if __name__ == "__main__":
 
     print("Start generating")
     with open("investigating_emergence/data/ctl/master.txt", 'w') as fp:
-         for i in range(21000):
-             print(i)
-             fp.write(next(iterator) + "\n")
+         with open("investigating_emergence/data/ctl/master_mask.txt", 'w') as fp2:
+            for i in range(21000):
+                print(i)
+                segment, mask = next(iterator)
+                fp.write(segment + "\n")
+                fp2.write(mask + "\n")
 
     # Create vocabulary
     all_symbols = list(task.func_domain) + list(task.function_symbols) + [':', '.'] 
@@ -145,15 +151,24 @@ if __name__ == "__main__":
 
     # Split into train/validation/test
     file_path = "investigating_emergence/data/ctl/master.txt"
-    df = pd.read_csv(file_path, sep='\n', encoding='utf8', dtype=str, keep_default_na=False, na_values='')
-    train, test = train_test_split(df, test_size=0.05)
-    train.to_csv("investigating_emergence/data/ctl/train.txt", sep='\n', encoding='utf8', 
+    file_path_mask = "investigating_emergence/data/ctl/master_mask.txt"
+    df = pd.read_csv(file_path, sep='\n', encoding='utf8', dtype=str, keep_default_na=False, na_values='', names=['task'])
+    df2 = pd.read_csv(file_path_mask, sep='\n', encoding='utf8', dtype=str, keep_default_na=False, na_values='', names=['mask'])
+    common_df = df.merge(df2, left_index=True, right_index=True)
+
+    train, test = train_test_split(common_df, test_size=0.05)
+    train['task'].to_csv("investigating_emergence/data/ctl/train.txt", sep='\n', encoding='utf8', 
                 header = False, index = False)
-    test.to_csv("investigating_emergence/data/ctl/valid.txt", sep='\n', encoding='utf8', 
+    test['task'].to_csv("investigating_emergence/data/ctl/valid.txt", sep='\n', encoding='utf8', 
+                header = False, index = False)
+    
+    train['mask'].to_csv("investigating_emergence/data/ctl/train_mask.txt", sep='\n', encoding='utf8', 
+                header = False, index = False)
+    test['mask'].to_csv("investigating_emergence/data/ctl/valid_mask.txt", sep='\n', encoding='utf8', 
                 header = False, index = False)
 
     # Keep test and validation the same
     shutil.copyfile("investigating_emergence/data/ctl/valid.txt", "investigating_emergence/data/ctl/test.txt")
-
+    shutil.copyfile("investigating_emergence/data/ctl/valid_mask.txt", "investigating_emergence/data/ctl/test_mask.txt")
 
 

@@ -1,0 +1,79 @@
+====================================================================================================
+    - data : data/enwik8/
+    - dataset : enwik8
+    - n_layer : 6
+    - n_head : 8
+    - d_head : 128
+    - d_embed : 128
+    - d_model : 128
+    - d_inner : 256
+    - dropout : 0.1
+    - dropatt : 0.0
+    - init : normal
+    - emb_init : normal
+    - init_range : 0.1
+    - emb_init_range : 0.01
+    - init_std : 0.02
+    - proj_init_std : 0.01
+    - optim : adam
+    - lr : 2e-05
+    - mom : 0.0
+    - scheduler : cosine
+    - warmup_step : 0
+    - decay_rate : 0.5
+    - lr_min : 0.0
+    - clip : 0.25
+    - clip_nonemb : False
+    - max_step : 30000
+    - batch_size : 20
+    - batch_chunk : 1
+    - tgt_len : 5
+    - eval_tgt_len : 5
+    - ext_len : 0
+    - mem_len : 0
+    - not_tied : False
+    - seed : 1111
+    - cuda : True
+    - adaptive : False
+    - div_val : 1
+    - pre_lnorm : False
+    - varlen : False
+    - multi_gpu : False
+    - log_interval : 200
+    - eval_interval : 1000
+    - work_dir : LM-TFM-enwik8/20230321-095032
+    - restart : False
+    - restart_dir : 
+    - debug : False
+    - same_length : False
+    - attn_type : 2
+    - clamp_len : -1
+    - eta_min : 0.0
+    - gpu0_bsz : -1
+    - max_eval_steps : -1
+    - sample_softmax : -1
+    - patience : 0
+    - finetune_v2 : False
+    - finetune_v3 : False
+    - fp16 : False
+    - static_loss_scale : 1
+    - dynamic_loss_scale : False
+    - tied : True
+    - n_token : 256
+    - n_all_param : 3577344
+    - n_nonemb_param : 3544320
+====================================================================================================
+#params = 3577344
+#non emb params = 3544320
+| epoch   1 step      200 |    200 batches | lr 2e-05 | ms/batch 32.50 | loss  4.43 | bpc   6.39413
+| epoch   1 step      400 |    400 batches | lr 2e-05 | ms/batch 24.09 | loss  4.33 | bpc   6.25119
+| epoch   1 step      600 |    600 batches | lr 2e-05 | ms/batch 23.39 | loss  3.95 | bpc   5.69920
+| epoch   1 step      800 |    800 batches | lr 2e-05 | ms/batch 23.88 | loss  3.44 | bpc   4.96503
+| epoch   1 step     1000 |   1000 batches | lr 1.99e-05 | ms/batch 23.30 | loss  3.41 | bpc   4.92005
+----------------------------------------------------------------------------------------------------
+| Eval   1 at step     1000 | time: 39.54s | valid loss  3.55 | bpc   5.12173
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     1200 |   1200 batches | lr 1.99e-05 | ms/batch 97.26 | loss  3.33 | bpc   4.79952
+| epoch   1 step     1400 |   1400 batches | lr 1.99e-05 | ms/batch 23.42 | loss  2.92 | bpc   4.21159
+| epoch   1 step     1600 |   1600 batches | lr 1.99e-05 | ms/batch 23.50 | loss  2.97 | bpc   4.28415
+| epoch   1 step     1800 |   1800 batches | lr 1.98e-05 | ms/batch 23.41 | loss  2.76 | bpc   3.98630
