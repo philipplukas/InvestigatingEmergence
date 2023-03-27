@@ -42,14 +42,14 @@ class CTLTask():
         #    return all([current != seen for seen in occured_so_far])
 
         for idx, symbol in enumerate(self.function_symbols):
-            print(idx)
+            #print(idx)
             random.shuffle(shuffle_set)
-            print(shuffle_set)
+            #print(shuffle_set)
             while shuffle_set in occured_outputs:
                 #print("Not new")
                 random.shuffle(shuffle_set)
 
-            print(shuffle_set)
+            #print(shuffle_set)
             tasks[symbol] = dict(zip(self.keys, shuffle_set))
             occured_outputs.append(copy.deepcopy(shuffle_set))
         #samples = random.sample(self.all_tasks, self.num_tasks)
@@ -65,8 +65,10 @@ class CTLTask():
         comp_task_prefix = "PC"
 
         seen = set()
+        
 
         while True:
+            all_choices = []
             rand_depth  = random.randint(1,self.max_depth)
 
             if rand_depth > 1:
@@ -80,15 +82,19 @@ class CTLTask():
             task_in = "".join(map(str, key))
             task_out_step = base_tasks[choice][key]
             task_in_between = ""
+            all_choices.append(choice)
 
             for step in range(rand_depth-1):
                 task_in_between += "".join(map(str, task_out_step))
                 choice = random.choice(list(base_tasks.keys()))
                 task_out_step = base_tasks[choice][task_out_step]
+                all_choices.append(choice)
 
             #complete = "".join(map(str, task_in)) +  ":" + choice + ":" + ".".join(map(str,task_in_between))+ "".join(map(str,task_out_step))
-            complete = "".join(map(str, task_in)) +  ":" + choice + ":" + "".join(map(str,task_out_step))
-            mask = len(task_in)*'0' + '0'  + len(choice)*'0' + '0' + len(task_out_step)*'1'
+            complete = "".join(map(str, task_in)) +  ":" + ":".join(all_choices) + ":" + "".join(map(str,task_out_step)) + "."
+            mask = len(task_in)*'0' + '0'  + (len(all_choices) + (len(all_choices)-1))*'0' + '0' + len(task_out_step)*'1' + '0'
+            #print(complete)
+            #print(mask)
             assert len(complete) == len(mask)
 
             if rejection_sampling:

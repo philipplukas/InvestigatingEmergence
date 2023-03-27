@@ -37,7 +37,24 @@ wandb.init(
     # track hyperparameters and run metadata
     config={
     "learning_rate": 2e-05,
-    "dataset": "enwik8",
+    "dataset": "ctl",
+    "function_domain": "range(8)",
+    "domain_size": 4,
+    "num_tasks": 8,
+    "max_depth": 10,
+    "n_layer": 6,
+    "d_model": 128,
+    "n_head": 8,
+    "d_head": 128,
+    "d_inner": 256,
+    "dropout": 0.1,
+    "optim": "adam",
+    "tgt_len": 128,
+    "eval_gt_len": 128,
+    "scheduler": "cosine",
+    "ext_len": 0,
+    "mem_len": 0,
+    "batch_size": 20
     }
 )
 

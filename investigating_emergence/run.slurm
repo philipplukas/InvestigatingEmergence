@@ -7,8 +7,8 @@
 
 srun python train.py \
         --cuda \
-        --data data/enwik8/ \
-        --dataset enwik8 \
+        --data data/ctl/ \
+        --dataset ctl \
         --n_layer 6 \
         --d_model 128 \
         --n_head 8 \
@@ -19,7 +19,7 @@ srun python train.py \
         --optim adam \
         --lr 2e-05 \
         --warmup_step 0 \
-        --max_step 30000 \
+        --max_step 10000000 \
         --tgt_len 128 \
 	--eval_tgt_len 128 \
 	--ext_len 0 \
