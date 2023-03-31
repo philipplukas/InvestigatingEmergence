@@ -148,6 +148,9 @@ def init():
     args = parser.parse_args()
     args.tied = not args.not_tied
 
+    # DEBUG
+    # args.batch_size = 1
+
     if args.d_embed < 0:
         args.d_embed = args.d_model
 
@@ -200,9 +203,9 @@ def init():
     #     device=device, ext_len=args.ext_len)
 
     if args.dataset == "ctl":
-        train_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device)
-        valid_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device)
-        test_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device)
+        train_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device, eval_mode=True)
+        valid_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device, eval_mode=True)
+        test_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device, eval_mode=True)
 
     elif args.dataset == "enwik8":
         train_data = EnwikDataset(os.path.join(BASE_PATH,"data/enwik8/"), "train", args.tgt_len, device)
@@ -234,6 +237,7 @@ def init():
         va_iter = DataLoader(valid_data, args.batch_size)
         te_iter = DataLoader(test_data, args.batch_size)
 
+    vocab = train_data.get_vocab()
     ntokens = len(train_data.get_vocab())
     args.n_token = ntokens
 
@@ -419,4 +423,4 @@ def init():
             print('Optimizer was not saved. Start from scratch.')
 
 
-    return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, scheduler, None, device
+    return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, scheduler, None, device, vocab

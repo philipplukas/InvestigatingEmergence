@@ -18,11 +18,11 @@ class CTLTask():
       
         # User numbers instad of binary ["0", "1"] since they are more general
         self.func_domain = range(8)   
-        self.domain_size = 4
-        self.num_tasks = 8
+        self.domain_size = 1
+        self.num_tasks = 32
         self.max_depth = 10
 
-        self.function_symbols = "abcdefgh"
+        self.function_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"[:32]
         assert(len(self.function_symbols) == self.num_tasks)
 
         self.keys = list(itertools.product(self.func_domain, repeat=self.domain_size))

@@ -7,6 +7,7 @@ import itertools
 import wandb
 
 import numpy as np
+import re
 
 import torch
 import torch.nn as nn
@@ -26,7 +27,7 @@ from tasks.mixed_task.dataset import MixedDataset
 from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 import init
 
-args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device = init.init()
+args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device, vocab = init.init()
 
 
 # start a new wandb run to track this script
@@ -59,9 +60,11 @@ wandb.init(
 )
 
 # In case there is an exception, still finish wandb run
-def notify_exception(type, value, tb):
-    wandb.finish()
-sys.excepthook = notify_exception
+
+
+#def notify_exception(type, value, tb):
+#    wandb.finish()
+#sys.excepthook = notify_exception
 
 
 logging('=' * 100)
@@ -90,8 +93,12 @@ def evaluate(eval_iter):
 
     # Evaluation
     total_len, total_loss = 0, 0.
+    all_predictions = []
+    all_mask = []
+    all_targets = []
     with torch.no_grad():
         mems = tuple()
+        logging("Before eval loop")
         for i, (data, target, seq_len, mask) in enumerate(eval_iter):
 
             # seq_len should only be one number
@@ -101,23 +108,111 @@ def evaluate(eval_iter):
 
             if args.max_eval_steps > 0 and i >= args.max_eval_steps:
                 break
-            ret = model(data, target, *mems)
+            ret, hidden = model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
 
+            logits = model.crit._compute_logit(hidden, model.crit.out_layers[0].weight,
+                                        model.crit.out_layers[0].bias, model.crit.out_projs[0])
+
+
+            # Get correct shape, sames as in transformer model code
+            # logits = logits.view(-1, logits.size(-1))
+            predictions = torch.argmax(logits, dim=2)
+            all_predictions.append(predictions)
+            all_mask.append(mask)
+            all_targets.append(target)
+
             # Check if mask is in use
-            if mask[0].item() != -1:
-                loss = (loss*mask).mean()
+            if args.dataset == "ctl":
+                if mask[0][0].item() != -1:
+                    loss = (loss*mask).mean()
+                else:
+                    loss = loss.mean()
+
             else:
-                loss = loss.mean()
+                if mask[0].item() != -1:
+                    loss = (loss*mask).mean()
+                else:
+                    loss = loss.mean()
        
             total_loss += seq_len * loss.float().item()
             total_len += seq_len
+        logging("After eval loop")
+
+    if args.dataset == "ctl":
+        # Compute masked symbols correct.
+        masked_indices = torch.cat(all_mask, 0)
+        predictions = torch.cat(all_predictions, 0)
+        all_targets = torch.cat(all_targets, 0)
+        a = torch.argwhere(masked_indices)
+        total = len(torch.argwhere(masked_indices))
+
+
+        correct = total - len(torch.argwhere((predictions-all_targets)*masked_indices))
+        correct_rate = correct / total
+
+        # Assume full answers are separated by 0 mask-values
+        index_spans = []
+
+        zero_before = False
+        current_start_index = -1
+        current_idx = 0
+
+        all_mask = torch.flatten(masked_indices)
+        all_targets = torch.flatten(all_targets)
+        predictions = torch.flatten(predictions)
+
+        logging("Before indices calculation")
+
+        # Calculate indices of continous 1-sequences
+        for el in all_mask:
+            if el.item() == 1:
+                if zero_before:
+                    current_start_index = current_idx
+                else:
+                    pass    
+
+                zero_before = False
+
+            else:
+                if current_start_index > -1:
+                    index_spans.append( (current_start_index, current_idx) )
+                    current_start_index = -1
+
+                zero_before = True
+            current_idx += 1
+
+        total_spans = len(index_spans)
+        total_correct = 0
+
+        for span in index_spans:
+            span_len = span[1] - span[0]
+
+            #print(torch.sum(predictions[span[0]:span[1]] == all_targets[span[0]:span[1]]))
+            #print(span_len)
+            if torch.sum(predictions[span[0]:span[1]] == all_targets[span[0]:span[1]]).item() == span_len:
+                total_correct += 1
+
+            #print("predictions") 
+            #print(predictions[span[0]-1:span[1]-1])
+            #print(all_targets[span[0]:span[1]])
+
+        print(vocab.lookup_tokens(predictions[:20].tolist()))
+        print(vocab.lookup_tokens(all_targets[:20].tolist()))
+
+        total_correct_rate = total_correct / total_spans
+
 
     # Switch back to the training mode
     model.reset_length(args.tgt_len, args.ext_len, args.mem_len)
     model.train()
 
-    return total_loss / total_len
+    logging("End of eval")
+
+    if args.dataset == "ctl":
+        return total_loss / total_len, correct_rate, total_correct_rate
+    else:
+        return total_loss / total_len
 
 
 def train():
@@ -153,9 +248,11 @@ def train():
                     loss.backward()
                 train_loss += loss.float().item()
         else:
-            ret = para_model(data, target, *mems)
+            ret, _ = para_model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
             loss = loss.float().mean().type_as(loss)
+
+            wandb.log({"train_cross_entropy": loss, "train_ppl": math.exp(loss)})
             if args.fp16:
                 optimizer.backward(loss)
             else:
@@ -204,7 +301,12 @@ def train():
             log_start_time = time.time()
 
         if train_step % args.eval_interval == 0:
-            val_loss = evaluate(va_iter)
+        #if True:
+            logging("Before calling eval")
+            if args.dataset == 'ctl':
+                val_loss, correct, total_correct = evaluate(va_iter)
+            else:
+                val_loss = evaluate(va_iter)
             logging('-' * 100)
             log_str = '| Eval {:3d} at step {:>8d} | time: {:5.2f}s ' \
                       '| valid loss {:5.2f}'.format(
@@ -218,7 +320,14 @@ def train():
             logging('-' * 100)
 
             # log metrics to wandb
-            wandb.log({"acc": val_loss, "ppl": math.exp(val_loss)})
+            if args.dataset == 'ctl':
+                wandb.log({"cross_entropy_val": val_loss, 
+                        "ppl_val": math.exp(val_loss),
+                        "correct characters": correct,
+                        "correct answers": total_correct})
+            else:
+                wandb.log({"cross_entropy_val": val_loss, 
+                            "ppl_val": math.exp(val_loss)})
 
             # Save the model if the validation loss is the best we've seen so far.
             if not best_val_loss or val_loss < best_val_loss:

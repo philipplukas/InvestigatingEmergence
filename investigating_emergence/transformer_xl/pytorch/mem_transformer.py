@@ -755,10 +755,11 @@ class MemTransformerLM(nn.Module):
             loss = self.crit(pred_hid.view(-1, pred_hid.size(-1)), target.view(-1))
             loss = loss.view(tgt_len, -1)
 
+        # Return predictions as well
         if new_mems is None:
-            return [loss]
+            return [loss], pred_hid
         else:
-            return [loss] + new_mems
+            return [loss] + new_mems, pred_hid
 
 if __name__ == '__main__':
     import argparse

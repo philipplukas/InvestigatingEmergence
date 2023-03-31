@@ -209,7 +209,8 @@ class CTLDataset(IterableDataset):
                                     self.preprocess([self[self.curr_idx+1][0]])])
             
             if self.eval_mode:
-                eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[self.curr_idx+1][0]])])
+                #eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[self.curr_idx+1][0]])])
+                eval_mask = next_sample_mask
             
             assert len(train_input) == len(train_output)
             assert len(train_input) == self.target_len
@@ -217,7 +218,8 @@ class CTLDataset(IterableDataset):
                 assert len(eval_mask) == len(train_output)
 
             if self.eval_mode:
-                return train_input, train_output, -1, eval_mask
+                #return train_input, train_output, -1, eval_mask
+                return train_input, train_input, -1, eval_mask
             
             # Return -1 instead of none, since pytorch doesn't recognize None
             else:
