@@ -17,6 +17,8 @@ from tasks.ctl_task.dataset import CTLDataset
 from tasks.enwik_task.dataset import EnwikDataset
 from tasks.mixed_task.dataset import MixedDataset
 
+from itertools import cycle
+
 BASE_PATH = os.path.dirname(__file__)
 
 def init():
@@ -26,17 +28,17 @@ def init():
     parser.add_argument('--dataset', type=str, default='ctl',
                         choices=['wt103', 'lm1b', 'enwik8', 'text8', 'ctl', 'mixed'],
                         help='dataset name')
-    parser.add_argument('--n_layer', type=int, default=12,
+    parser.add_argument('--n_layer', type=int, default=2,
                         help='number of total layers')
-    parser.add_argument('--n_head', type=int, default=10,
+    parser.add_argument('--n_head', type=int, default=3,
                         help='number of heads')
-    parser.add_argument('--d_head', type=int, default=50,
+    parser.add_argument('--d_head', type=int, default=3,
                         help='head dimension')
     parser.add_argument('--d_embed', type=int, default=-1,
                         help='embedding dimension')
     parser.add_argument('--d_model', type=int, default=500,
                         help='model dimension')
-    parser.add_argument('--d_inner', type=int, default=1000,
+    parser.add_argument('--d_inner', type=int, default=128,
                         help='inner dimension in FF')
     parser.add_argument('--dropout', type=float, default=0.0,
                         help='global dropout rate')
@@ -61,7 +63,7 @@ def init():
                         help='initial learning rate (0.00025|5 for adam|sgd)')
     parser.add_argument('--mom', type=float, default=0.0,
                         help='momentum for sgd')
-    parser.add_argument('--scheduler', default='cosine', type=str,
+    parser.add_argument('--scheduler', default='constant', type=str,
                         choices=['cosine', 'inv_sqrt', 'dev_perf', 'constant'],
                         help='lr scheduler to use.')
     parser.add_argument('--warmup_step', type=int, default=0,
@@ -76,13 +78,13 @@ def init():
                         help='only clip the gradient of non-embedding params')
     parser.add_argument('--max_step', type=int, default=100000,
                         help='upper epoch limit')
-    parser.add_argument('--batch_size', type=int, default=60,
+    parser.add_argument('--batch_size', type=int, default=1,
                         help='batch size')
     parser.add_argument('--batch_chunk', type=int, default=1,
                         help='split batch into chunks to save memory')
-    parser.add_argument('--tgt_len', type=int, default=70,
+    parser.add_argument('--tgt_len', type=int, default=127,
                         help='number of tokens to predict')
-    parser.add_argument('--eval_tgt_len', type=int, default=50,
+    parser.add_argument('--eval_tgt_len', type=int, default=127,
                         help='number of tokens to predict for evaluation')
     parser.add_argument('--ext_len', type=int, default=0,
                         help='length of the extended context')
@@ -145,6 +147,9 @@ def init():
     parser.add_argument('--dynamic-loss-scale', action='store_true',
                         help='Use dynamic loss scaling.  If supplied, this argument'
                         ' supersedes --static-loss-scale.')
+    
+    parser.add_argument('--mixing-rate',  type=float, default=1, 
+                        help='Percentage of data coming from ctl-task, between 0 and 1')
     args = parser.parse_args()
     args.tied = not args.not_tied
 
@@ -203,9 +208,9 @@ def init():
     #     device=device, ext_len=args.ext_len)
 
     if args.dataset == "ctl":
-        train_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device, eval_mode=True)
-        valid_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device, eval_mode=True)
-        test_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device, eval_mode=True)
+        train_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device, eval_mode=True, all_chars=True)
+        valid_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device, eval_mode=True, all_chars=True)
+        test_data = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device, eval_mode=True, all_chars=True)
 
     elif args.dataset == "enwik8":
         train_data = EnwikDataset(os.path.join(BASE_PATH,"data/enwik8/"), "train", args.tgt_len, device)
@@ -213,23 +218,24 @@ def init():
         test_data = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "test", args.eval_tgt_len, device)
 
     elif args.dataset == "mixed":
-        train_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device)
-        valid_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device)
-        test_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device)
+        train_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "train", args.tgt_len, device, all_chars=True, eval_mode=True)
+        valid_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "valid", args.eval_tgt_len, device, all_chars=True, eval_mode=True)
+        test_data_ctl = CTLDataset(os.path.join(BASE_PATH, "data/ctl/"), "test", args.eval_tgt_len, device, all_chars=True, eval_mode=True)
 
         train_data_enwik = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "train", args.tgt_len, device)
         valid_data_enwik = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "valid", args.eval_tgt_len, device)
         test_data_enwik = EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "test", args.eval_tgt_len, device)
 
-        train_data = MixedDataset(train_data_ctl, train_data_enwik, args.batch_size, 0.4)
-        valid_data = MixedDataset(valid_data_ctl, valid_data_enwik, args.batch_size, 0.4)
-        test_data = MixedDataset(test_data_ctl, test_data_enwik, args.batch_size, 0.4)
+        train_data = MixedDataset(train_data_ctl, train_data_enwik, args.batch_size, args.mixing_rate, device)
+        valid_data = valid_data_ctl #MixedDataset(valid_data_ctl, valid_data_enwik, args.batch_size, 0.9, device)
+        test_data = test_data_ctl #MixedDataset(test_data_ctl, test_data_enwik, args.batch_size, 0.9, device)
 
     if args.dataset == "mixed":
         # This data already comes in batched from
         tr_iter = DataLoader(train_data, batch_size=None)
-        va_iter = DataLoader(valid_data, batch_size=None)
-        te_iter = DataLoader(test_data, batch_size=None)
+        va_iter = DataLoader(valid_data) #, batch_size=None)
+        te_iter = DataLoader(test_data) #, batch_size=None)
+        enwik8_iter = DataLoader(EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "valid", args.eval_tgt_len, device))
 
     else: 
         # This data already comes in batched from
@@ -422,5 +428,7 @@ def init():
         else:
             print('Optimizer was not saved. Start from scratch.')
 
-
-    return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, scheduler, None, device, vocab
+    if args.dataset == "mixed":
+        return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab
+    else:
+        return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab
