@@ -20,7 +20,7 @@ class CTLTask():
         self.func_domain = range(8)   
         self.domain_size = 1
         self.num_tasks = 8
-        self.max_depth = 1
+        self.max_depth = 4
 
         self.function_symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"[:8]
         self.start_symbol = "^"

@@ -25,13 +25,15 @@ from tasks.enwik_task.dataset import EnwikDataset
 from tasks.mixed_task.dataset import MixedDataset
 from tasks.ctl_task.eval import Evaluator
 
+from data.statistics import get_data_statistics
+
 from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 import init
 
 from itertools import cycle
 from itertools import islice
 
-args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab = init.init()
+args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab, scheduler = init.init()
 
 
 # start a new wandb run to track this script
@@ -63,6 +65,24 @@ wandb.init(
     "mixing_rate": args.mixing_rate
     }
 )
+
+
+# Log datset statistics
+
+train_stats = get_data_statistics("train")
+valid_stats = get_data_statistics("valid")
+
+
+# Example from wandb
+#data = [[label, val] for (label, val) in train_stats.items()]
+#table = wandb.Table(data=data, columns = ["label", "value"])
+#wandb.log({"train_data_dist" : wandb.plot.bar(table, "label", "value",
+#                               title="train_data_dist")})
+
+#data = [[label, val] for (label, val) in valid_stats.items()]
+#table = wandb.Table(data=data, columns = ["label", "value"])
+#wandb.log({"valid_data_dist" : wandb.plot.bar(table, "label", "value",
+#                               title="valid_data_dist")})
 
 # In case there is an exception, still finish wandb run
 
@@ -113,8 +133,8 @@ def evaluate(eval_iter):
         for i, (data, target, seq_len, mask) in enumerate(islice(eval_iter,5)):
 
             data = data.transpose(0,1).contiguous()
-            #target = target.transpose(0,1).contiguous()
-            target = target.reshape(1,-1)
+            target = target.transpose(0,1).contiguous()
+            #target = target.reshape(1,-1)
 
             mask = mask.transpose(0,1).contiguous()
 
@@ -145,7 +165,13 @@ def evaluate(eval_iter):
                 if mask[0][0].item() != -1:
                      loss = (loss*mask).flatten().sum() / mask.flatten().sum()
             elif args.dataset == "ctl":
-                loss = loss.sum() #.mean()
+                if mask[0][0].item() != -1:
+                    if mask.flatten().sum().item() == 0:
+                        loss = (loss*mask).flatten().sum()
+                    else:
+                        loss = (loss*mask).flatten().sum() / mask.flatten().sum()
+                else:
+                    loss = loss.mean() #sum() #.mean()
 
             else:
                 if mask[0].item() != -1:
@@ -154,14 +180,14 @@ def evaluate(eval_iter):
                     loss = loss.mean()
        
             total_loss += loss.float().item()#seq_len * loss.float().item()
-            total_len += seq_len #seq_len
+            total_len += 1 #seq_len
         logging("After eval loop")
 
         # Enwik8 loop
 
         if args.dataset == "mixed":
             enwik_loss = 0
-            for  batch, (data, target, seq_len, mask) in enumerate(islice(enwik8_iter,50)):
+            for  batch, (data, target, seq_len, mask) in enumerate(islice(enwik8_iter,5)):
                 data = data.transpose(0,1).contiguous()
                 target = target.transpose(0,1).contiguous()
 
@@ -243,7 +269,7 @@ def evaluate(eval_iter):
         """
 
         # Alternative computation
-        evaluator = Evaluator(model,vocab, device, args.tgt_len)
+        evaluator = Evaluator(model,vocab, device, args.tgt_len, 5)
         total_correct_rate = evaluator.calculate_accuracy()
         correct_rate = total_correct_rate
 
@@ -277,8 +303,8 @@ def train():
 
         # Get it  into the shape expected by the transfor-mem code
         data = data.transpose(0,1).contiguous()
-        target = target.reshape(1,-1)
-        #target = target.transpose(0,1).contiguous()
+        #target = target.reshape(1,-1)
+        target = target.transpose(0,1).contiguous()
 
         #print(list(map(chr, data.squeeze().tolist())))
 
@@ -306,8 +332,12 @@ def train():
             #if train_step % args.log_interval == 0:
             #print(loss[:,0][:16])
             #print(mask[:,0][:16])
-            loss = loss.float().mean().type_as(loss)
-            #loss = (loss*mask).flatten().sum().float().type_as(loss)
+            #loss = loss.float().mean().type_as(loss)
+            actual_seq_len = seq_len.to(device=device).flatten().sum().float()
+            if actual_seq_len == 0:
+                loss = (loss*mask).flatten().sum()
+            else:
+                loss = ((loss*mask).flatten().sum() / actual_seq_len).type_as(loss)
 
             #masked_loss = (loss*mask).float().mean().type_as(loss)
 

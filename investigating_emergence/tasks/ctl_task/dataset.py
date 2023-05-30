@@ -233,12 +233,12 @@ class CTLDataset(IterableDataset):
                 assert len(eval_mask) == len(train_output)
 
             if self.eval_mode:
-                return train_input[:-1], train_input[1:], -1, eval_mask[1:] #eval_mask
+                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:] #eval_mask
                 #return train_input, train_input, -1, eval_mask
             
             # Return -1 instead of none, since pytorch doesn't recognize None
             else:
-                return train_input[:-1], train_input[1:], -1, -1
+                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:]
 
 
         # Implement wrap-around logic    
@@ -259,12 +259,12 @@ class CTLDataset(IterableDataset):
                 assert len(eval_mask) == len(train_output)
 
             if self.eval_mode:
-                return train_input[:-1], train_input[1:], -1, eval_mask[1:] #eval_mask
+                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:] #eval_mask
                 #return train_input, train_input, -1, eval_mask
             
             # Return -1 instead of none, since pytorch doesn't recognize None
             else:
-                return train_input[:-1], train_input[1:], -1, eval_mask[1:]
+                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:]
             
         # No following data line, this is the last one.
          

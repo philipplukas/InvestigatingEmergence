@@ -429,6 +429,12 @@ def init():
             print('Optimizer was not saved. Start from scratch.')
 
     if args.dataset == "mixed":
-        return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab
+        if scheduler:
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab ,scheduler
+        else:
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab ,None
     else:
-        return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab
+        if scheduler:
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, scheduler
+        else:
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None

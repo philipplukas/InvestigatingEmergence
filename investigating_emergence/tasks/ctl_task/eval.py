@@ -19,7 +19,7 @@ Evaluate language model on specifc task.
 """
 class Evaluator:
     
-    def __init__(self, model, vocab, device, target_len) -> None:
+    def __init__(self, model, vocab, device, target_len, max_depth) -> None:
         #model = torch.load("LM-TFM-ctl/20230313-191014/model.pt", map_location=torch.device('cpu'))
         #model.to(torch.device(device))
         #model.eval()
@@ -32,6 +32,7 @@ class Evaluator:
         self.vocab = vocab
         self.device = device
         self.target_len = target_len
+        self.max_depth = max_depth
 
         # Load basetasks
         with open('/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/data/ctl/base_tasks.pickle', 'rb') as f:
@@ -64,7 +65,7 @@ class Evaluator:
         logit_one = logit[:,-1,:]
 
         #print(self.vocab.lookup_tokens(torch.argmax(logit, 2).reshape(-1).tolist()))
-        print(list(map(chr, (torch.argmax(logit[:,-1,:], 1).reshape(-1).tolist()))))
+        #print(list(map(chr, (torch.argmax(logit[:,-1,:], 1).reshape(-1).tolist()))))
 
         max_idx = torch.argmax(logit_one,dim=1)
 
@@ -84,21 +85,20 @@ class Evaluator:
         return out
 
     def calculate_accuracy(self):
-        max_depth = 5
 
-        correct = [0] * max_depth
-        total = [0] * max_depth
+        correct = [0] * self.max_depth
+        total = [0] * self.max_depth
 
         task = CTLTask(self.base_tasks)
 
         #with open(self.valid_filename, 'r') as fp:
         #   for idx, line in enumerate(fp.readlines()):
-        for depth in [1]:
+        for depth in range(1,self.max_depth+1):
                 #if idx % 100 == 0:
                 #       continue
 
             iterator = task.infinite_samples(self.base_tasks, depth=depth)
-            for i in range(50):
+            for i in range(5):
 
                 #line = line.rstrip()
                 # Not interested in mask part
