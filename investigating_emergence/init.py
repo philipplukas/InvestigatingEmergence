@@ -410,6 +410,7 @@ def init():
             scheduler_sparse = optim.lr_scheduler.ReduceLROnPlateau(optimizer_sparse,
                 factor=args.decay_rate, patience=args.patience, min_lr=args.lr_min)
     elif args.scheduler == 'constant':
+        scheduler = None
         pass
 
     if args.cuda and args.fp16:

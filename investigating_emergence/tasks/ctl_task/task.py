@@ -63,7 +63,7 @@ class CTLTask():
         return tasks
 
 
-    def infinite_samples(self, base_tasks, rejection_sampling=False, depth=None):
+    def infinite_samples(self, base_tasks, rejection_sampling=False, depth=None, eval_mode=False):
 
         base_task_prefix = "NC"
         comp_task_prefix = "PC"
@@ -90,15 +90,31 @@ class CTLTask():
             task_out_step = base_tasks[choice][key]
             task_in_between = []
             all_choices.append(choice)
+            mask_in_between = ['0']
+
+            if not eval_mode:
+                all_choices.append(str(task_out_step[0]))
+            mask_in_between.append('1')
 
             for step in range(rand_depth-1):
                 task_in_between.append("".join(map(str, task_out_step)))
                 choice = random.choice(list(base_tasks.keys()))
                 task_out_step = base_tasks[choice][task_out_step]
-                all_choices.append(choice)
 
-            combo = zip(all_choices[:-1], task_in_between)  
-            between_part = [ part1 + ":" + part2 for (part1, part2) in combo] 
+                all_choices.append(choice)
+                mask_in_between.append('0')
+
+                # If immediate steps should be recorded as well
+                if not eval_mode:
+                    all_choices.append(str(task_out_step[0]))
+                mask_in_between.append('1')                
+
+            # Srip of last step if steps recorded as well
+            all_choices = all_choices[:-1]
+            mask_in_between = mask_in_between[:-1]
+
+            #combo = zip(all_choices[:-1], task_in_between)  
+            #between_part = [ part1 + ":" + part2 for (part1, part2) in combo] 
 
             #complete = "".join(map(str, task_in)) +  ":" + choice + ":" + ".".join(map(str,task_in_between))+ "".join(map(str,task_out_step))
             #complete = "".join(map(str, task_in)) +  ":" + ":".join(all_choices) + ":" + "".join(map(str,task_out_step)) + "."
@@ -107,8 +123,16 @@ class CTLTask():
             #mask = len(task_in)*'0' + '0'  + (len(":".join(between_part)))*'0' + '000' + len(task_out_step)*'1' + '0'
             
             # Third version, no : in the middle
-            complete = self.start_symbol + "".join(map(str, task_in)) + "".join(all_choices) + ":" + "".join(map(str,task_out_step)) + "."
-            mask = '0' + len(task_in)*'0' + (len(all_choices))*'0' + '0' + len(task_out_step)*'1' + '0'
+            if eval_mode:
+                complete = self.start_symbol + "".join(map(str, task_in)) + "-".join(all_choices) + ":" + "".join(map(str,task_out_step)) + "."
+                mask = '0' + len(task_in)*'0' + (len("-".join(all_choices)))*'0' + '0' + len(task_out_step)*'1' + '0'
+            
+            else:
+                # Version if intermediate steps should be logged to.
+                complete = self.start_symbol + "".join(map(str, task_in)) + "".join(all_choices) + ":" + "".join(map(str,task_out_step)) + "."
+                mask = '0' + len(task_in)*'0' + "".join(mask_in_between) + '0' + len(task_out_step)*'1' + '0'
+                
+            
             #print(complete)
             #print(mask)
             assert len(complete) == len(mask)

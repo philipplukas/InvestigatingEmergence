@@ -19,13 +19,13 @@ srun python train.py \
         --dropatt 0.0 \
 	--dropout 0.1 \
         --optim adam \
-        --lr 0.00025 \
+        --lr 1e-5 \
         --warmup_step 0 \
         --max_step 10000000 \
         --tgt_len 512 \
 	--eval_tgt_len 128 \
 	--ext_len 0 \
-        --scheduler inv_sqrt \
+        --scheduler constant \
         --mem_len 0 \
 	--attn_type 2 \
         --batch_size 22 \

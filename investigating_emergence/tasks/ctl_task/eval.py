@@ -97,7 +97,7 @@ class Evaluator:
                 #if idx % 100 == 0:
                 #       continue
 
-            iterator = task.infinite_samples(self.base_tasks, depth=depth)
+            iterator = task.infinite_samples(self.base_tasks, depth=depth, eval_mode=True)
             for i in range(5):
 
                 #line = line.rstrip()
