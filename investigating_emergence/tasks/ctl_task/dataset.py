@@ -30,8 +30,10 @@ class CTLVocabBuilder(object):
                     yield line.strip()
 
         # One special character for unknown tokens.
+        characters = [chr(c) for c in range(256)]
         unk_token = "<unk>"
-        vocab = build_vocab_from_iterator(yield_tokens(file_path), specials=[unk_token])
+        #vocab = build_vocab_from_iterator(yield_tokens(file_path), specials=[unk_token])
+        vocab = build_vocab_from_iterator(characters, specials=[unk_token])
         vocab.set_default_index(vocab[unk_token])
 
         return vocab

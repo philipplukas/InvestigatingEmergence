@@ -216,7 +216,7 @@ def evaluate(eval_iter):
         total_correct_rate = total_correct / total_spans
         """
         # Alternative computation
-        evaluator = Evaluator(model,vocab, device, args.tgt_len, 1)
+        evaluator = Evaluator(model,vocab, device, args.tgt_len, 5)
         total_correct_rate = evaluator.calculate_accuracy()
         correct_rate = total_correct_rate
 
