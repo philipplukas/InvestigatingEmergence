@@ -24,10 +24,17 @@ from tasks.ctl_task.dataset import CTLDataset
 from tasks.enwik_task.dataset import EnwikDataset
 from tasks.mixed_task.dataset import MixedDataset
 
+from tasks.ctl_task.eval import Evaluator
+
 from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 import init
 
+
+from itertools import cycle, islice
+
 args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device, vocab = init.init()
+
+va_iter = cycle(iter(va_iter))
 
 
 # start a new wandb run to track this script
@@ -99,7 +106,11 @@ def evaluate(eval_iter):
     with torch.no_grad():
         mems = tuple()
         logging("Before eval loop")
-        for i, (data, target, seq_len, mask) in enumerate(eval_iter):
+        for i, (data, target, seq_len, mask) in enumerate(islice(eval_iter,50)):
+
+            data = data.transpose(0,1).contiguous()
+            target = target.transpose(0,1).contiguous()
+            mask = mask.transpose(0,1).contiguous()
 
             # seq_len should only be one number
             # But since we use automati batching we get duplicates
@@ -140,6 +151,8 @@ def evaluate(eval_iter):
         logging("After eval loop")
 
     if args.dataset == "ctl":
+
+        """
         # Compute masked symbols correct.
         masked_indices = torch.cat(all_mask, 0)
         predictions = torch.cat(all_predictions, 0)
@@ -201,7 +214,11 @@ def evaluate(eval_iter):
         print(vocab.lookup_tokens(all_targets[:20].tolist()))
 
         total_correct_rate = total_correct / total_spans
-
+        """
+        # Alternative computation
+        evaluator = Evaluator(model,vocab, device, args.tgt_len, 1)
+        total_correct_rate = evaluator.calculate_accuracy()
+        correct_rate = total_correct_rate
 
     # Switch back to the training mode
     model.reset_length(args.tgt_len, args.ext_len, args.mem_len)
@@ -225,12 +242,15 @@ def train():
         mems = tuple()
     #train_iter = tr_iter.get_varlen_iter() if args.varlen else tr_iter
     train_iter = iter(tr_iter)
+    train_iter = cycle(train_iter)
 
-    for batch, (data, target, seq_len, _) in enumerate(train_iter):
+    for batch, (data, target, seq_len, mask) in enumerate(train_iter):
 
         # Get it  into the shape expected by the transfor-mem code
         data = data.transpose(0,1).contiguous()
         target = target.transpose(0,1).contiguous()
+
+        mask =  mask.transpose(0,1).contiguous()
 
         model.zero_grad()
         if args.batch_chunk > 1:
@@ -250,7 +270,7 @@ def train():
         else:
             ret, _ = para_model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
-            loss = loss.float().mean().type_as(loss)
+            loss = (loss*mask).float().mean().type_as(loss)
 
             wandb.log({"train_cross_entropy": loss, "train_ppl": math.exp(loss)})
             if args.fp16:

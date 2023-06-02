@@ -1,19 +1,11 @@
-wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
-wandb: Tracking run with wandb version 0.14.0
-wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/wandb/run-20230331_130335-hl1c9etu
-wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run generous-dew-84
-wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
-wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/hl1c9etu
-wandb: Network error (TransientError), entering retry loop.
-Experiment dir : LM-TFM-ctl/20230331-130326
+Experiment dir : LM-TFM-ctl/20230602-083037
 Data set loaded
 ====================================================================================================
     - data : data/ctl/
     - dataset : ctl
     - n_layer : 6
     - n_head : 8
-    - d_head : 128
+    - d_head : 16
     - d_embed : 128
     - d_model : 128
     - d_inner : 256
@@ -26,7 +18,7 @@ Data set loaded
     - init_std : 0.02
     - proj_init_std : 0.01
     - optim : adam
-    - lr : 2e-05
+    - lr : 0.0001
     - mom : 0.0
     - scheduler : cosine
     - warmup_step : 0
@@ -35,7 +27,7 @@ Data set loaded
     - clip : 0.25
     - clip_nonemb : False
     - max_step : 10000000
-    - batch_size : 20
+    - batch_size : 128
     - batch_chunk : 1
     - tgt_len : 128
     - eval_tgt_len : 128
@@ -51,12 +43,12 @@ Data set loaded
     - multi_gpu : False
     - log_interval : 200
     - eval_interval : 100
-    - work_dir : LM-TFM-ctl/20230331-130326
+    - work_dir : LM-TFM-ctl/20230602-083037
     - restart : False
     - restart_dir : 
     - debug : False
     - same_length : False
-    - attn_type : 2
+    - attn_type : 0
     - clamp_len : -1
     - eta_min : 0.0
     - gpu0_bsz : -1
@@ -69,118 +61,186 @@ Data set loaded
     - static_loss_scale : 1
     - dynamic_loss_scale : False
     - tied : True
-    - n_token : 43
-    - n_all_param : 3549867
-    - n_nonemb_param : 3544320
+    - n_token : 20
+    - n_all_param : 892948
+    - n_nonemb_param : 890112
 ====================================================================================================
-#params = 3549867
-#non emb params = 3544320
+#params = 892948
+#non emb params = 890112
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', ':', ':', ':', ':', 'a', ':', ':', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^4c:
+Predicted Answer: 1
+Answer 3
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   1 at step      100 | time:  6.97s | valid loss  0.15 | valid ppl     1.165
+| Eval   1 at step      100 | time: 14.76s | valid loss  0.27 | valid ppl     1.314
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step      200 |    200 batches | lr 2e-05 | ms/batch 52.29 | loss  2.31 | ppl    10.099
+| epoch   1 step      200 |    200 batches | lr 0.0001 | ms/batch 127.08 | loss  0.29 | ppl     1.332
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^7g:
+Predicted Answer: 2
+Answer 5
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   2 at step      200 | time:  6.13s | valid loss  0.13 | valid ppl     1.134
+| Eval   2 at step      200 | time: 12.57s | valid loss  0.27 | valid ppl     1.304
 ----------------------------------------------------------------------------------------------------
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^7b:
+Predicted Answer: 7
+Answer 2
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   3 at step      300 | time:  6.21s | valid loss  0.10 | valid ppl     1.109
+| Eval   3 at step      300 | time: 12.61s | valid loss  0.26 | valid ppl     1.301
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step      400 |    400 batches | lr 2e-05 | ms/batch 63.33 | loss  1.50 | ppl     4.467
+| epoch   1 step      400 |    400 batches | lr 0.0001 | ms/batch 127.09 | loss  0.26 | ppl     1.301
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^3a:
+Predicted Answer: 5
+Answer 2
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   4 at step      400 | time:  6.12s | valid loss  0.08 | valid ppl     1.087
+| Eval   4 at step      400 | time: 12.62s | valid loss  0.26 | valid ppl     1.300
 ----------------------------------------------------------------------------------------------------
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^0e:
+Predicted Answer: 1
+Answer 4
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   5 at step      500 | time:  6.32s | valid loss  0.07 | valid ppl     1.070
+| Eval   5 at step      500 | time: 12.64s | valid loss  0.26 | valid ppl     1.299
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step      600 |    600 batches | lr 2e-05 | ms/batch 64.02 | loss  0.93 | ppl     2.539
+| epoch   1 step      600 |    600 batches | lr 0.0001 | ms/batch 127.91 | loss  0.26 | ppl     1.298
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^0a:
+Predicted Answer: 0
+Answer 0
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   6 at step      600 | time:  6.14s | valid loss  0.05 | valid ppl     1.056
+| Eval   6 at step      600 | time: 12.72s | valid loss  0.26 | valid ppl     1.296
 ----------------------------------------------------------------------------------------------------
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^4b:
+Predicted Answer: 3
+Answer 4
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   7 at step      700 | time:  6.11s | valid loss  0.04 | valid ppl     1.045
+| Eval   7 at step      700 | time: 12.81s | valid loss  0.25 | valid ppl     1.288
 ----------------------------------------------------------------------------------------------------
-| epoch   2 step      800 |    163 batches | lr 2e-05 | ms/batch 62.85 | loss  0.55 | ppl     1.742
+| epoch   1 step      800 |    800 batches | lr 0.0001 | ms/batch 129.43 | loss  0.25 | ppl     1.289
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^4b:
+Predicted Answer: 3
+Answer 4
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   8 at step      800 | time:  6.23s | valid loss  0.04 | valid ppl     1.036
+| Eval   8 at step      800 | time: 12.88s | valid loss  0.25 | valid ppl     1.282
 ----------------------------------------------------------------------------------------------------
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^1f:
+Predicted Answer: 2
+Answer 2
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval   9 at step      900 | time:  6.26s | valid loss  0.03 | valid ppl     1.028
+| Eval   9 at step      900 | time: 12.97s | valid loss  0.24 | valid ppl     1.271
 ----------------------------------------------------------------------------------------------------
-| epoch   2 step     1000 |    363 batches | lr 2e-05 | ms/batch 64.69 | loss  0.31 | ppl     1.370
+| epoch   1 step     1000 |   1000 batches | lr 0.0001 | ms/batch 131.06 | loss  0.24 | ppl     1.272
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
-['6', ':', 'k', ':', 'g', ':', 'a', ':', 'F', ':', 'i', ':', 'e', ':', '2', '.', '4', ':', 'i', ':']
+Before generating all tasks
+Generating all tasks
+Query ^5a:
+Predicted Answer: 4
+Answer 4
+
 End of eval
 ----------------------------------------------------------------------------------------------------
-| Eval  10 at step     1000 | time:  6.21s | valid loss  0.02 | valid ppl     1.021
+| Eval  10 at step     1000 | time: 13.02s | valid loss  0.23 | valid ppl     1.256
 ----------------------------------------------------------------------------------------------------
 Before calling eval
 Before eval loop
 After eval loop
-Before indices calculation
+Before generating all tasks
+Generating all tasks
+Query ^3d:
+Predicted Answer: 5
+Answer 5
+
+End of eval
+----------------------------------------------------------------------------------------------------
+| Eval  11 at step     1100 | time: 13.07s | valid loss  0.21 | valid ppl     1.239
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     1200 |   1200 batches | lr 0.0001 | ms/batch 132.16 | loss  0.22 | ppl     1.245
+Before calling eval
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^7d:
+Predicted Answer: 6
+Answer 6
+
+End of eval
+----------------------------------------------------------------------------------------------------
+| Eval  12 at step     1200 | time: 13.08s | valid loss  0.20 | valid ppl     1.226
+----------------------------------------------------------------------------------------------------
+Before calling eval
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^4f:
+Predicted Answer: 6
+Answer 6
+
+End of eval
+----------------------------------------------------------------------------------------------------
+| Eval  13 at step     1300 | time: 13.12s | valid loss  0.19 | valid ppl     1.212
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     1400 |   1400 batches | lr 0.0001 | ms/batch 132.58 | loss  0.20 | ppl     1.220
+Before calling eval
