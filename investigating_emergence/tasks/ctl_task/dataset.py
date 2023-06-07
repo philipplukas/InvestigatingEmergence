@@ -44,7 +44,7 @@ class CTLVocabBuilder(object):
 
 class CTLDataset(IterableDataset):
 
-    def __init__(self, dataset_dir, split, target_len, device, eval_mode=False):
+    def __init__(self, dataset_dir, split, target_len, device, eval_mode=False, all_chars=False):
 
         super(CTLDataset).__init__()
 
@@ -71,11 +71,13 @@ class CTLDataset(IterableDataset):
         #self.to_device_transform =  transforms.Lambda(lambda x: x.to(self.device))
 
         self.curr_idx = -1
-        self.target_len = target_len
+        self.target_len = 7
         self.eval_mode = eval_mode
+        self.all_chars = all_chars
 
     def get_vocab(self):
-        return self.vocab
+        #return self.vocab
+        return range(256)
         
     def __len__(self):
        return len(self.segments)
@@ -99,8 +101,13 @@ class CTLDataset(IterableDataset):
 
     def preprocess(self, tokenized: str) -> torch.Tensor:
 
-        encoded =  self.vocab_transform(tokenized)
-        tensor = self.to_tensor_transform(encoded)
+        if not self.all_chars:
+            encoded =  self.vocab_transform(tokenized)
+            tensor = self.to_tensor_transform(encoded)
+        else:
+            encoded = self.to_tensor_transform(list(map(ord, tokenized)))
+            tensor = encoded
+        
         device_tensor = tensor.to(device=self.device)
         return device_tensor
 
@@ -117,7 +124,10 @@ class CTLDataset(IterableDataset):
         current_text : List[str] = []
         current_mask : List[str] = []
 
-        while self.curr_idx < len(self):
+        while True: #self.curr_idx < len(self):
+            if self.curr_idx >= len(self):
+                self.curr_idx = 0
+
             next_segment = self[self.curr_idx]
             if self.eval_mode:
                 next_segment_mask = self.masks[self.curr_idx]
@@ -184,6 +194,9 @@ class CTLDataset(IterableDataset):
                 yield self.preprocess(remaining)
 
         # No more data samples available
+        # Just continue in a loop
+
+
         #raise StopIteration
 
     """
@@ -210,9 +223,37 @@ class CTLDataset(IterableDataset):
             train_output = torch.cat([next_sample[1:],
                                     self.preprocess([self[self.curr_idx+1][0]])])
             
+
+            
             if self.eval_mode:
-                #eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[self.curr_idx+1][0]])])
-                eval_mask = next_sample_mask
+                eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[self.curr_idx+1][0]])])
+                #eval_mask = next_sample_mask
+            
+            assert len(train_input) == len(train_output)
+            assert len(train_input) == self.target_len
+            if self.eval_mode:
+                assert len(eval_mask) == len(train_output)
+
+            if self.eval_mode:
+                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:] #eval_mask
+                #return train_input, train_input, -1, eval_mask
+            
+            # Return -1 instead of none, since pytorch doesn't recognize None
+            else:
+                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:]
+
+
+        # Implement wrap-around logic    
+        else:
+            train_input = next_sample
+
+            # Simply append first element from next data line
+            train_output = torch.cat([next_sample[1:],
+                                    self.preprocess([self[0][0]])])
+            
+            if self.eval_mode:
+                eval_mask = torch.cat([next_sample_mask[1:], self.preprocess_mask([self.masks[0][0]])])
+                #eval_mask = next_sample_mask
             
             assert len(train_input) == len(train_output)
             assert len(train_input) == self.target_len
@@ -247,6 +288,6 @@ class CTLDataset(IterableDataset):
         
         """
         
-        raise StopIteration()
+        #raise StopIteration()
 
 

@@ -23,6 +23,9 @@ from transformer_xl.pytorch.utils.data_parallel import BalancedDataParallel
 from tasks.ctl_task.dataset import CTLDataset
 from tasks.enwik_task.dataset import EnwikDataset
 from tasks.mixed_task.dataset import MixedDataset
+from tasks.ctl_task.eval import Evaluator
+
+from data.statistics import get_data_statistics
 
 from tasks.ctl_task.eval import Evaluator
 
@@ -44,27 +47,46 @@ wandb.init(
     
     # track hyperparameters and run metadata
     config={
-    "learning_rate": 2e-05,
-    "dataset": "ctl",
+    "learning_rate": args.lr,
+    "dataset": "mixed",
     "function_domain": "range(8)",
-    "domain_size": 4,
+    "domain_size": 8,
     "num_tasks": 8,
-    "max_depth": 10,
-    "n_layer": 6,
-    "d_model": 128,
-    "n_head": 8,
-    "d_head": 128,
-    "d_inner": 256,
-    "dropout": 0.1,
-    "optim": "adam",
-    "tgt_len": 128,
-    "eval_gt_len": 128,
-    "scheduler": "cosine",
+    "max_depth": 5,
+    "n_layer": args.n_layer,
+    "d_model": args.d_model,
+    "n_head": args.n_head,
+    "d_head": args.d_head,
+    "d_inner": args.d_inner,
+    "dropout": args.dropout,
+    "optim": args.optim,
+    "tgt_len": args.tgt_len,
+    "eval_tgt_len": args.eval_tgt_len,
+    "scheduler": args.scheduler,
     "ext_len": 0,
     "mem_len": 0,
-    "batch_size": 20
+    "batch_size": args.batch_size,
+    "mixing_rate": args.mixing_rate
     }
 )
+
+
+# Log datset statistics
+
+train_stats = get_data_statistics("train")
+valid_stats = get_data_statistics("valid")
+
+
+# Example from wandb
+#data = [[label, val] for (label, val) in train_stats.items()]
+#table = wandb.Table(data=data, columns = ["label", "value"])
+#wandb.log({"train_data_dist" : wandb.plot.bar(table, "label", "value",
+#                               title="train_data_dist")})
+
+#data = [[label, val] for (label, val) in valid_stats.items()]
+#table = wandb.Table(data=data, columns = ["label", "value"])
+#wandb.log({"valid_data_dist" : wandb.plot.bar(table, "label", "value",
+#                               title="valid_data_dist")})
 
 # In case there is an exception, still finish wandb run
 
@@ -73,6 +95,12 @@ wandb.init(
 #    wandb.finish()
 #sys.excepthook = notify_exception
 
+
+train_iter = iter(cycle(tr_iter))
+va_iter = iter(cycle(va_iter))
+
+if args.dataset == "mixed":
+    enwik8_iter = iter(cycle(enwik8_iter))
 
 logging('=' * 100)
 for k, v in args.__dict__.items():
@@ -115,7 +143,7 @@ def evaluate(eval_iter):
             # seq_len should only be one number
             # But since we use automati batching we get duplicates
             # Just extract the first element
-            seq_len = seq_len[0].item()
+            seq_len = data.size()[0] #[0].item()
 
             if args.max_eval_steps > 0 and i >= args.max_eval_steps:
                 break
@@ -133,7 +161,32 @@ def evaluate(eval_iter):
             all_mask.append(mask)
             all_targets.append(target)
 
+            
             # Check if mask is in use
+            """
+            if args.dataset == "mixed":
+                if mask[0][0].item() != -1:
+                     loss = (loss*mask).flatten().sum() / mask.flatten().sum()
+            elif args.dataset == "ctl":
+                if mask[0][0].item() != -1:
+                    if mask.flatten().sum().item() == 0:
+                        loss = (loss*mask).flatten().sum()
+                    else:
+                        loss = (loss*mask).flatten().sum() / mask.flatten().sum()
+                else:
+                    loss = loss.mean() #sum() #.mean()
+
+            else:
+                if mask[0].item() != -1:
+                    loss = (loss*mask).mean()
+                else:
+                    loss = loss.mean()
+       
+            total_loss += loss.float().item()#seq_len * loss.float().item()
+            total_len += 1 #seq_len
+            """
+
+             # Check if mask is in use
             if args.dataset == "ctl":
                 if mask[0][0].item() != -1:
                     loss = (loss*mask).mean()
@@ -150,10 +203,29 @@ def evaluate(eval_iter):
             total_len += seq_len
         logging("After eval loop")
 
-    if args.dataset == "ctl":
+    # Enwik8 loop
+
+    if args.dataset == "mixed":
+        enwik_loss = 0
+        for  batch, (data, target, seq_len, mask) in enumerate(islice(enwik8_iter,5)):
+            data = data.transpose(0,1).contiguous()
+            target = target.transpose(0,1).contiguous()
+
+            ret, _ = para_model(data, target, *mems)
+            loss, mems = ret[0], ret[1:]
+            loss = loss.float().mean().type_as(loss)
+
+            enwik_loss += loss
+            #loss = (loss*mask).float().mean().type_as(loss)
+
+            #masked_loss = (loss*mask).float().mean().type_as(loss)
+        enwik_loss = enwik_loss / 5
+
+    elif args.dataset == "ctl":
 
         """
         # Compute masked symbols correct.
+
         masked_indices = torch.cat(all_mask, 0)
         predictions = torch.cat(all_predictions, 0)
         all_targets = torch.cat(all_targets, 0)
@@ -213,8 +285,9 @@ def evaluate(eval_iter):
         print(vocab.lookup_tokens(predictions[:20].tolist()))
         print(vocab.lookup_tokens(all_targets[:20].tolist()))
 
-        total_correct_rate = total_correct / total_spans
+        total_correct_rate = total_correct / total_span
         """
+        
         # Alternative computation
         evaluator = Evaluator(model,vocab, device, args.tgt_len, 5)
         total_correct_rate = evaluator.calculate_accuracy()
@@ -224,9 +297,11 @@ def evaluate(eval_iter):
     model.reset_length(args.tgt_len, args.ext_len, args.mem_len)
     model.train()
 
-    logging("End of eval")
+    #logging("End of eval")
 
-    if args.dataset == "ctl":
+    if args.dataset == "mixed":
+        return total_loss / total_len, correct_rate, total_correct_rate, enwik_loss
+    elif args.dataset == "ctl":
         return total_loss / total_len, correct_rate, total_correct_rate
     else:
         return total_loss / total_len
@@ -248,6 +323,7 @@ def train():
 
         # Get it  into the shape expected by the transfor-mem code
         data = data.transpose(0,1).contiguous()
+        #target = target.reshape(1,-1)
         target = target.transpose(0,1).contiguous()
 
         mask =  mask.transpose(0,1).contiguous()
@@ -259,7 +335,7 @@ def train():
             for i in range(args.batch_chunk):
                 data_i = data_chunks[i].contiguous()
                 target_i = target_chunks[i].contiguous()
-                ret = para_model(data_i, target_i, *mems[i])
+                ret, _ = para_model(data_i, target_i, *mems[i])
                 loss, mems[i] = ret[0], ret[1:]
                 loss = loss.float().mean().type_as(loss) / args.batch_chunk
                 if args.fp16:
@@ -322,8 +398,10 @@ def train():
 
         if train_step % args.eval_interval == 0:
         #if True:
-            logging("Before calling eval")
-            if args.dataset == 'ctl':
+            #logging("Before calling eval")
+            if args.dataset == 'mixed':
+                val_loss, correct, total_correct, enwik_loss = evaluate(va_iter)
+            elif args.dataset == "ctl":
                 val_loss, correct, total_correct = evaluate(va_iter)
             else:
                 val_loss = evaluate(va_iter)
@@ -340,11 +418,23 @@ def train():
             logging('-' * 100)
 
             # log metrics to wandb
-            if args.dataset == 'ctl':
-                wandb.log({"cross_entropy_val": val_loss, 
-                        "ppl_val": math.exp(val_loss),
-                        "correct characters": correct,
-                        "correct answers": total_correct})
+            if args.dataset == 'mixed':
+                wandb.log({"ctl_cross_entropy_val": val_loss, 
+                        "ctl_ppl_val": math.exp(val_loss),
+                        "enwik8_cross_entropy_val": enwik_loss, 
+                        "enwik8_ppl_val": math.exp(enwik_loss)})
+                        #"correct answers": total_correct})
+
+                for idx, el in enumerate(correct):
+                    wandb.log({"ctl: correct answers depth {}".format(idx+1): el})
+
+            elif args.dataset == "ctl":
+                wandb.log({"ctl_cross_entropy_val": val_loss, 
+                        "ctl_ppl_val": math.exp(val_loss)})
+                        #"correct answers": total_correct})
+
+                for idx, el in enumerate(correct):
+                    wandb.log({"ctl: correct answers depth {}".format(idx+1): el})
             else:
                 wandb.log({"cross_entropy_val": val_loss, 
                             "ppl_val": math.exp(val_loss)})
@@ -379,6 +469,7 @@ eval_start_time = time.time()
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
+    logging('Start training')
     for epoch in itertools.count(start=1):
         train()
         if train_step == args.max_step:
@@ -388,6 +479,7 @@ try:
 except KeyboardInterrupt:
     logging('-' * 100)
     logging('Exiting from training early')
+    wandb.finish()
 
 # Load the best saved model.
 with open(os.path.join(args.work_dir, 'model.pt'), 'rb') as f:
@@ -406,4 +498,4 @@ else:
 logging('=' * 100)
 
 # Cleanup wandb 
-wandb.finish()
+# wandb.finish()

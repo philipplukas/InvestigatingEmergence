@@ -641,7 +641,7 @@ class MemTransformerLM(nn.Module):
 
     def _forward(self, dec_inp, mems=None):
         qlen, bsz = dec_inp.size()
-
+        dec_inp.contiguous()
         word_emb = self.word_emb(dec_inp)
 
         mlen = mems[0].size(0) if mems is not None else 0
@@ -658,6 +658,10 @@ class MemTransformerLM(nn.Module):
         else:
             dec_attn_mask = torch.triu(
                 word_emb.new_ones(qlen, klen), diagonal=1+mlen).byte()[:,:,None]
+            
+
+        #padding = (torch.triu(word_emb.new_ones(qlen, qlen), diagonal=1).byte()[:,:,None]).expand(qlen,qlen,self.d_embed).transpose(0,1)
+        #word_emb = word_emb.masked_fill(padding, 0)
 
         hids = []
         if self.attn_type == 0: # default
@@ -745,6 +749,7 @@ class MemTransformerLM(nn.Module):
         hidden, new_mems = self._forward(data, mems=mems)
 
         pred_hid = hidden[-tgt_len:]
+        #pred_hid = hidden[:,-1]
         if self.sample_softmax > 0 and self.training:
             assert self.tie_weight
             logit = sample_logits(self.word_emb,
