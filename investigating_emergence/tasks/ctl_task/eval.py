@@ -36,8 +36,8 @@ class Evaluator:
         self.target_len = target_len
         self.max_depth = max_depth
 
-        full_path = "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/data/ctl/vocab.txt"
-        self.vocab = CTLVocabBuilder(full_path).get_vocab()
+        #full_path = "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/data/ctl/vocab.txt"
+        #self.vocab = CTLVocabBuilder(full_path).get_vocab()
 
         self.vocab = vocab
         self.vocab_transform = VocabTransform(self.vocab)
@@ -137,7 +137,8 @@ class Evaluator:
         for idx, el in enumerate(total):
             if el == 0:
                 total[idx] = 1
-        return sum([corr for (corr, tot) in zip(correct, total)]) / sum([tot for (corr, tot) in zip(correct, total)])
+        #return sum([corr for (corr, tot) in zip(correct, total)]) / sum([tot for (corr, tot) in zip(correct, total)])
+        return [corr/tot for (corr, tot) in zip(correct, total)]
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(sys.argv[0]))

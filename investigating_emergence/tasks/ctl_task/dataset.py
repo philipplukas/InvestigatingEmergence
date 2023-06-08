@@ -76,8 +76,8 @@ class CTLDataset(IterableDataset):
         self.all_chars = all_chars
 
     def get_vocab(self):
-        #return self.vocab
-        return range(256)
+        return self.vocab
+        #return range(256)
         
     def __len__(self):
        return len(self.segments)
@@ -101,15 +101,11 @@ class CTLDataset(IterableDataset):
 
     def preprocess(self, tokenized: str) -> torch.Tensor:
 
-        if not self.all_chars:
-            encoded =  self.vocab_transform(tokenized)
-            tensor = self.to_tensor_transform(encoded)
-        else:
-            encoded = self.to_tensor_transform(list(map(ord, tokenized)))
-            tensor = encoded
-        
+        encoded =  self.vocab_transform(tokenized)
+        tensor = self.to_tensor_transform(encoded)
         device_tensor = tensor.to(device=self.device)
         return device_tensor
+    
 
     def __iter__(self):
         self.curr_idx = 0
@@ -244,6 +240,8 @@ class CTLDataset(IterableDataset):
 
 
         # Implement wrap-around logic    
+
+        """
         else:
             train_input = next_sample
 
@@ -262,16 +260,16 @@ class CTLDataset(IterableDataset):
 
             if self.eval_mode:
                 #return train_input, train_output, -1, eval_mask
-                return train_input[:-1], train_input[1:], -1, next_sample_mask[1:] #eval_mask
+                return train_input[:-1], train_input[1:], torch.tensor([-1]).to(device=self.device), next_sample_mask[1:] #eval_mask
             
             # Return -1 instead of none, since pytorch doesn't recognize None
             else:
-                return train_input[:-1], train_input[1:], -1, -1
+                return train_input[:-1], train_input[1:], torch.tensor([-1]).to(device=self.device), -1
             
         # No following data line, this is the last one.
          
         # For now ignore such a situation
-        """
+        
         elif self.curr_idx == len(self)-1:
             padding_tensor = torch.tensor([float('-Inf')*(self.target_len-(next_sample[:-1].size()[0]))]).to(device=self.device)
             train_input = torch.cat([next_sample[:-1], padding_tensor], 0).to(device=self.device)
@@ -288,6 +286,6 @@ class CTLDataset(IterableDataset):
         
         """
         
-        #raise StopIteration()
+        raise StopIteration()
 
 

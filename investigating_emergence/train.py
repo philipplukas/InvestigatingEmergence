@@ -35,7 +35,8 @@ import init
 
 from itertools import cycle, islice
 
-args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler, scheduler_sparse, device, vocab = init.init()
+# return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None
+args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler_sparse, device, vocab, scheduler = init.init()
 
 va_iter = cycle(iter(va_iter))
 
