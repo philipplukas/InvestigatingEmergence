@@ -1,13 +1,8 @@
-slurmstepd: error: *** STEP 18137795.0 ON eu-lo-s4-076 CANCELLED AT 2023-06-07T15:17:08 ***
-slurmstepd: error: *** JOB 18137795 ON eu-lo-s4-076 CANCELLED AT 2023-06-07T15:17:08 ***
-srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
 wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
 wandb: Tracking run with wandb version 0.14.0
-wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/wandb/run-20230607_151741-os2po0s8
+wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/wandb/run-20230612_093148-wuwnpwjt
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run radiant-dawn-519
+wandb: Syncing run quiet-dew-535
 wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
-wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/os2po0s8
+wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/wuwnpwjt
 wandb: Network error (TransientError), entering retry loop.
-slurmstepd: error: *** STEP 18138168.0 ON eu-lo-s4-075 CANCELLED AT 2023-06-07T16:17:06 DUE TO TIME LIMIT ***
-slurmstepd: error: *** JOB 18138168 ON eu-lo-s4-075 CANCELLED AT 2023-06-07T16:17:06 DUE TO TIME LIMIT ***

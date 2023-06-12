@@ -22,7 +22,7 @@ srun python train.py \
         --lr 1e-04 \
         --warmup_step 0 \
         --max_step 10000000 \
-        --tgt_len 512 \
+        --tgt_len 128 \
 	--eval_tgt_len 128 \
 	--ext_len 0 \
         --scheduler constant \

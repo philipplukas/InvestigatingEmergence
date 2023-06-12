@@ -71,7 +71,7 @@ class CTLDataset(IterableDataset):
         #self.to_device_transform =  transforms.Lambda(lambda x: x.to(self.device))
 
         self.curr_idx = -1
-        self.target_len = 7
+        self.target_len = target_len
         self.eval_mode = eval_mode
         self.all_chars = all_chars
 
@@ -236,7 +236,7 @@ class CTLDataset(IterableDataset):
             
             # Return -1 instead of none, since pytorch doesn't recognize None
             else:
-                return train_input[:-1], train_input[1:], eval_mask[:-1].flatten().sum(), next_sample_mask[1:]
+                return train_input[:-1], train_input[1:], -1, torch.tensor([0], device=self.device)
 
 
         # Implement wrap-around logic    

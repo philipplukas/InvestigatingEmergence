@@ -184,7 +184,7 @@ if __name__ == "__main__":
     print("Start generating")
     with open("investigating_emergence/data/ctl/master.txt", 'w') as fp:
          with open("investigating_emergence/data/ctl/master_mask.txt", 'w') as fp2:
-            for i in range(100000):
+            for i in range(200000):
                 if i % 10000 == 0:
                     print(i)
                 segment, mask = next(iterator)

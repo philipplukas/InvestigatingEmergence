@@ -1,6 +1,8 @@
 import os
 import torch
 from ..ctl_task.dataset import CTLDataset
+from ..ctl_task.dataset import CTLVocabBuilder
+
 import io
 from torchtext.vocab import build_vocab_from_iterator
 from torchtext.transforms import VocabTransform, ToTensor
@@ -27,7 +29,10 @@ class EnwikDataset(CTLDataset):
         self.segments = list(filter(lambda segment: len(segment) > 0, self.segments))
 
         # No need for vocabulary, dataset is alrady preprocessed and contains integer tokens.
+        full_path = os.path.join(dataset_dir, 'vocab.txt')
+        self.vocab = CTLVocabBuilder(full_path).get_vocab()
 
+        self.vocab_transform = VocabTransform(self.vocab)
         self.to_tensor_transform = ToTensor()
 
         self.curr_idx = -1
@@ -42,13 +47,14 @@ class EnwikDataset(CTLDataset):
     """ Takes string as arugment and turns it into a tensor containing numerical tokens"""
     def preprocess(self, tokenized: List[str]):
 
-        encoded =  list(map(int, tokenized))
+        encoded =  list(map(chr,map(int, tokenized)))
+        encoded =  self.vocab_transform(encoded)
         #tensor = torch.tensor(tokenized).to(device=self.device)
         tensor = self.to_tensor_transform(encoded)
         return tensor.to(device=self.device)
     
     def get_vocab(self):
-        return range(256)
+        return self.vocab
 
     
 

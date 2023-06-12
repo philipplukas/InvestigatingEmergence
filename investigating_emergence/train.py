@@ -36,7 +36,7 @@ import init
 from itertools import cycle, islice
 
 # return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None
-args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, scheduler_sparse, device, vocab, scheduler = init.init()
+args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab, scheduler = init.init()
 
 va_iter = cycle(iter(va_iter))
 
@@ -194,14 +194,20 @@ def evaluate(eval_iter):
                 else:
                     loss = loss.mean()
 
+            elif args.dataset == "enwik8":
+                loss = loss.mean()
+
+            elif args.dataset == "mixed":
+                loss = (loss*mask).mean()
+
             else:
                 if mask[0].item() != -1:
                     loss = (loss*mask).mean()
                 else:
                     loss = loss.mean()
        
-            total_loss += seq_len * loss.float().item()
-            total_len += seq_len
+            total_loss += loss.float().item()
+            total_len += 1
         logging("After eval loop")
 
     # Enwik8 loop
@@ -288,7 +294,9 @@ def evaluate(eval_iter):
 
         total_correct_rate = total_correct / total_span
         """
-        
+
+    if args.dataset == "ctl" or args.dataset == "mixed":   
+
         # Alternative computation
         evaluator = Evaluator(model,vocab, device, args.tgt_len, 5)
         total_correct_rate = evaluator.calculate_accuracy()
@@ -347,7 +355,13 @@ def train():
         else:
             ret, _ = para_model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
-            loss = (loss*mask).float().mean().type_as(loss)
+
+            if args.dataset == "ctl":
+                loss = (loss*mask).float().mean().type_as(loss)
+            elif args.dataset == "enwik8":
+                loss = loss.float().mean().type_as(loss)
+            elif args.dataset == "mixed":
+                loss = (loss*mask).float().mean().type_as(loss)
 
             wandb.log({"train_cross_entropy": loss, "train_ppl": math.exp(loss)})
             if args.fp16:

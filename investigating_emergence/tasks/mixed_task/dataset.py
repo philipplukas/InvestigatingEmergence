@@ -2,6 +2,8 @@ import random
 import torch
 from torch.utils.data import IterableDataset, DataLoader
 
+from itertools import cycle
+
 
 
 """
@@ -13,15 +15,14 @@ class MixedDataset(IterableDataset):
 
         super(MixedDataset).__init__()
 
-        self.data_laoder1 = iter(DataLoader(data_task1, batch_size))
-        self.data_laoder2 = iter(DataLoader(data_task2, batch_size))
+        self.vocab = data_task1.vocab
+        self.data_laoder1 = iter(cycle(DataLoader(data_task1, batch_size)))
+        self.data_laoder2 = iter(cycle(DataLoader(data_task2, batch_size)))
         self.task_ratio = task_ratio
         self.device = device
 
-        random.seed(7)
-
     def get_vocab(self):
-        return range(256)
+        return self.vocab
 
     def __iter__(self):
         return self
