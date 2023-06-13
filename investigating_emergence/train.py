@@ -79,15 +79,21 @@ valid_stats = get_data_statistics("valid")
 
 
 # Example from wandb
-#data = [[label, val] for (label, val) in train_stats.items()]
-#table = wandb.Table(data=data, columns = ["label", "value"])
-#wandb.log({"train_data_dist" : wandb.plot.bar(table, "label", "value",
+# data = [[label, val] for (label, val) in train_stats.items()]
+# table = wandb.Table(data=data, columns = ["label", "value"])
+# wandb.log({"train_data_dist" : wandb.plot.bar(table, "label", "value",
 #                               title="train_data_dist")})
 
 #data = [[label, val] for (label, val) in valid_stats.items()]
 #table = wandb.Table(data=data, columns = ["label", "value"])
-#wandb.log({"valid_data_dist" : wandb.plot.bar(table, "label", "value",
-#                               title="valid_data_dist")})
+#logging("Before plotting statistics")
+#wandb.log({"valid_data_dist" : table}, commit = False) #wandb.plot.bar(table, "label", "value",
+                               #title="valid_data_dist")})
+
+#artifact = wandb.Artifact('data_distribution', type='dataset_stats')
+#artifact.add(table, "val_data_dist")
+#wandb.log_artifact(artifact)
+
 
 # In case there is an exception, still finish wandb run
 
@@ -356,12 +362,10 @@ def train():
             ret, _ = para_model(data, target, *mems)
             loss, mems = ret[0], ret[1:]
 
-            if args.dataset == "ctl":
+            if args.use_mask_training:
                 loss = (loss*mask).float().mean().type_as(loss)
-            elif args.dataset == "enwik8":
+            else:
                 loss = loss.float().mean().type_as(loss)
-            elif args.dataset == "mixed":
-                loss = (loss*mask).float().mean().type_as(loss)
 
             wandb.log({"train_cross_entropy": loss, "train_ppl": math.exp(loss)})
             if args.fp16:

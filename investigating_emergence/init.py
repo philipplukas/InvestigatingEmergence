@@ -148,7 +148,10 @@ def init():
                         help='Use dynamic loss scaling.  If supplied, this argument'
                         ' supersedes --static-loss-scale.')
     
+    # My own arguments not included in transformer-x;
     parser.add_argument('--mixing-rate',  type=float, default=1, 
+                        help='Percentage of data coming from ctl-task, between 0 and 1')
+    parser.add_argument('--use-mask-training',  action="store_true", 
                         help='Percentage of data coming from ctl-task, between 0 and 1')
     args = parser.parse_args()
     args.tied = not args.not_tied

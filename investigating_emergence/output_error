@@ -1,8 +1,8 @@
 wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
 wandb: Tracking run with wandb version 0.14.0
-wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/wandb/run-20230612_093148-wuwnpwjt
+wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/wandb/run-20230613_112617-1qnsmuff
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run quiet-dew-535
+wandb: Syncing run whole-sea-544
 wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
-wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/wuwnpwjt
+wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/1qnsmuff
 wandb: Network error (TransientError), entering retry loop.

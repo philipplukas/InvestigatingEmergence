@@ -1,4 +1,4 @@
-Experiment dir : LM-TFM-ctl/20230612-093136
+Experiment dir : LM-TFM-ctl/20230613-112559
 Data set loaded
 ====================================================================================================
     - data : data/mixed/
@@ -43,7 +43,7 @@ Data set loaded
     - multi_gpu : False
     - log_interval : 200
     - eval_interval : 100
-    - work_dir : LM-TFM-ctl/20230612-093136
+    - work_dir : LM-TFM-ctl/20230613-112559
     - restart : False
     - restart_dir : 
     - debug : False
@@ -61,6 +61,7 @@ Data set loaded
     - static_loss_scale : 1
     - dynamic_loss_scale : False
     - mixing_rate : 1
+    - use_mask_training : False
     - tied : True
     - n_token : 257
     - n_all_param : 7243777
@@ -73,470 +74,305 @@ Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^6d:
+Query ^3c:
 Predicted Answer: 5
-Answer 5
+Answer 0
 
-Query ^0ec:
+Query ^2hb:
 Predicted Answer: 5
-Answer 5
+Answer 0
 
-Query ^2cgf:
+Query ^6hdd:
 Predicted Answer: 5
-Answer 1
+Answer 0
 
-Query ^5cggh:
+Query ^4cbfd:
 Predicted Answer: 5
 Answer 7
 
-Query ^1dcggf:
-Predicted Answer: 5
-Answer 6
-
-----------------------------------------------------------------------------------------------------
-| Eval   1 at step      100 | time: 39.58s | valid loss  0.26 | valid ppl     1.299
-----------------------------------------------------------------------------------------------------
-| epoch   1 step      200 |    200 batches | lr 0.0001 | ms/batch 350.41 | loss  0.29 | ppl     1.331
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^5d:
-Predicted Answer: 1
-Answer 1
-
-Query ^0ec:
-Predicted Answer: 2
-Answer 5
-
-Query ^5ccc:
-Predicted Answer: 1
-Answer 7
-
-Query ^7bbhc:
-Predicted Answer: 0
-Answer 7
-
-Query ^7abagh:
-Predicted Answer: 0
-Answer 4
-
-----------------------------------------------------------------------------------------------------
-| Eval   2 at step      200 | time: 37.46s | valid loss  0.23 | valid ppl     1.263
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^5f:
+Query ^5chgad:
 Predicted Answer: 6
-Answer 6
-
-Query ^6ha:
-Predicted Answer: 3
-Answer 0
-
-Query ^4abd:
-Predicted Answer: 4
-Answer 4
-
-Query ^4geab:
-Predicted Answer: 5
-Answer 0
-
-Query ^1ddbce:
-Predicted Answer: 5
-Answer 1
+Answer 3
 
 ----------------------------------------------------------------------------------------------------
-| Eval   3 at step      300 | time: 37.37s | valid loss  0.19 | valid ppl     1.206
+| Eval   1 at step      100 | time: 42.50s | valid loss  0.26 | valid ppl     1.300
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step      400 |    400 batches | lr 0.0001 | ms/batch 377.62 | loss  0.20 | ppl     1.216
+| epoch   1 step      200 |    200 batches | lr 0.0001 | ms/batch 368.27 | loss  2.00 | ppl     7.355
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^0e:
-Predicted Answer: 2
-Answer 2
-
-Query ^0dd:
+Query ^7b:
 Predicted Answer: 0
 Answer 0
 
-Query ^0acg:
+Query ^3hc:
+Predicted Answer: 0
+Answer 3
+
+Query ^2gec:
+Predicted Answer: 0
+Answer 1
+
+Query ^0hadb:
+Predicted Answer: 0
+Answer 3
+
+Query ^1dfbbg:
+Predicted Answer: 0
+Answer 6
+
+----------------------------------------------------------------------------------------------------
+| Eval   2 at step      200 | time: 38.18s | valid loss  0.26 | valid ppl     1.298
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^0f:
 Predicted Answer: 7
 Answer 1
 
-Query ^2bfbc:
-Predicted Answer: 5
-Answer 4
-
-Query ^0cehbg:
-Predicted Answer: 1
-Answer 3
-
-----------------------------------------------------------------------------------------------------
-| Eval   4 at step      400 | time: 37.38s | valid loss  0.16 | valid ppl     1.176
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^4a:
-Predicted Answer: 4
-Answer 4
-
-Query ^7de:
-Predicted Answer: 5
-Answer 5
-
-Query ^2gda:
-Predicted Answer: 1
-Answer 7
-
-Query ^1hfhb:
-Predicted Answer: 2
-Answer 2
-
-Query ^6ffbad:
-Predicted Answer: 1
-Answer 6
-
-----------------------------------------------------------------------------------------------------
-| Eval   5 at step      500 | time: 37.35s | valid loss  0.14 | valid ppl     1.149
-----------------------------------------------------------------------------------------------------
-| epoch   1 step      600 |    600 batches | lr 0.0001 | ms/batch 376.84 | loss  0.15 | ppl     1.156
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^6a:
-Predicted Answer: 5
-Answer 5
-
-Query ^1ad:
+Query ^4ga:
 Predicted Answer: 7
-Answer 7
-
-Query ^0ace:
-Predicted Answer: 5
-Answer 5
-
-Query ^0ggcb:
-Predicted Answer: 5
-Answer 1
-
-Query ^4ggddg:
-Predicted Answer: 2
-Answer 4
-
-----------------------------------------------------------------------------------------------------
-| Eval   6 at step      600 | time: 37.39s | valid loss  0.12 | valid ppl     1.125
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^0h:
-Predicted Answer: 6
-Answer 6
-
-Query ^5bf:
-Predicted Answer: 6
-Answer 6
-
-Query ^5hdd:
-Predicted Answer: 4
-Answer 4
-
-Query ^6febc:
-Predicted Answer: 5
-Answer 5
-
-Query ^0fccbf:
-Predicted Answer: 4
-Answer 6
-
-----------------------------------------------------------------------------------------------------
-| Eval   7 at step      700 | time: 37.53s | valid loss  0.09 | valid ppl     1.096
-----------------------------------------------------------------------------------------------------
-| epoch   1 step      800 |    800 batches | lr 0.0001 | ms/batch 377.81 | loss  0.10 | ppl     1.106
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^1d:
-Predicted Answer: 6
-Answer 6
-
-Query ^6cf:
-Predicted Answer: 2
-Answer 2
-
-Query ^4bah:
-Predicted Answer: 2
-Answer 2
-
-Query ^3egch:
-Predicted Answer: 2
-Answer 2
-
-Query ^2gbaeb:
-Predicted Answer: 6
-Answer 6
-
-----------------------------------------------------------------------------------------------------
-| Eval   8 at step      800 | time: 37.48s | valid loss  0.06 | valid ppl     1.067
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^1d:
-Predicted Answer: 6
-Answer 6
-
-Query ^6aa:
-Predicted Answer: 1
-Answer 1
-
-Query ^1eda:
-Predicted Answer: 3
 Answer 3
 
-Query ^5cefg:
-Predicted Answer: 3
-Answer 3
-
-Query ^3bbbff:
-Predicted Answer: 4
-Answer 5
-
-----------------------------------------------------------------------------------------------------
-| Eval   9 at step      900 | time: 37.45s | valid loss  0.04 | valid ppl     1.040
-----------------------------------------------------------------------------------------------------
-| epoch   1 step     1000 |   1000 batches | lr 0.0001 | ms/batch 377.79 | loss  0.05 | ppl     1.050
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^6d:
-Predicted Answer: 5
-Answer 5
-
-Query ^2bb:
-Predicted Answer: 3
-Answer 3
-
-Query ^7dfb:
+Query ^5hea:
 Predicted Answer: 7
-Answer 7
-
-Query ^6ehfc:
-Predicted Answer: 3
 Answer 3
 
-Query ^6cccee:
-Predicted Answer: 3
-Answer 3
-
-----------------------------------------------------------------------------------------------------
-| Eval  10 at step     1000 | time: 37.56s | valid loss  0.02 | valid ppl     1.025
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^4b:
-Predicted Answer: 4
-Answer 4
-
-Query ^1ah:
-Predicted Answer: 1
-Answer 1
-
-Query ^6geh:
-Predicted Answer: 0
-Answer 0
-
-Query ^0hfaf:
-Predicted Answer: 5
-Answer 5
-
-Query ^7fadcg:
-Predicted Answer: 1
-Answer 1
-
-----------------------------------------------------------------------------------------------------
-| Eval  11 at step     1100 | time: 35.72s | valid loss  0.02 | valid ppl     1.017
-----------------------------------------------------------------------------------------------------
-| epoch   1 step     1200 |   1200 batches | lr 0.0001 | ms/batch 350.82 | loss  0.02 | ppl     1.023
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^4c:
-Predicted Answer: 4
-Answer 4
-
-Query ^0ga:
-Predicted Answer: 6
-Answer 6
-
-Query ^0hdc:
-Predicted Answer: 3
-Answer 3
-
-Query ^4fdcc:
-Predicted Answer: 2
-Answer 2
-
-Query ^7hhgge:
-Predicted Answer: 6
-Answer 6
-
-----------------------------------------------------------------------------------------------------
-| Eval  12 at step     1200 | time: 33.89s | valid loss  0.01 | valid ppl     1.013
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^2c:
-Predicted Answer: 5
-Answer 5
-
-Query ^0db:
+Query ^4gcef:
 Predicted Answer: 7
-Answer 7
+Answer 5
 
-Query ^1adg:
-Predicted Answer: 1
-Answer 1
-
-Query ^7edab:
-Predicted Answer: 0
+Query ^2cbhec:
+Predicted Answer: 7
 Answer 0
 
-Query ^2abdff:
+----------------------------------------------------------------------------------------------------
+| Eval   3 at step      300 | time: 37.87s | valid loss  0.26 | valid ppl     1.298
+----------------------------------------------------------------------------------------------------
+| epoch   1 step      400 |    400 batches | lr 0.0001 | ms/batch 383.44 | loss  1.51 | ppl     4.545
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^4e:
+Predicted Answer: 5
+Answer 3
+
+Query ^4hg:
 Predicted Answer: 5
 Answer 5
 
+Query ^7bcf:
+Predicted Answer: 5
+Answer 3
+
+Query ^2eech:
+Predicted Answer: 5
+Answer 2
+
+Query ^4hbhfe:
+Predicted Answer: 5
+Answer 2
+
 ----------------------------------------------------------------------------------------------------
-| Eval  13 at step     1300 | time: 33.97s | valid loss  0.01 | valid ppl     1.011
+| Eval   4 at step      400 | time: 37.97s | valid loss  0.26 | valid ppl     1.298
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step     1400 |   1400 batches | lr 0.0001 | ms/batch 341.82 | loss  0.01 | ppl     1.014
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^5c:
-Predicted Answer: 3
-Answer 3
-
-Query ^7cc:
+Query ^1c:
 Predicted Answer: 2
 Answer 2
 
-Query ^1hfh:
-Predicted Answer: 6
-Answer 6
+Query ^4cg:
+Predicted Answer: 2
+Answer 3
 
-Query ^2afbf:
-Predicted Answer: 6
-Answer 6
+Query ^1ehh:
+Predicted Answer: 2
+Answer 0
 
-Query ^0ffaec:
-Predicted Answer: 0
+Query ^0egdg:
+Predicted Answer: 2
+Answer 4
+
+Query ^4efdda:
+Predicted Answer: 2
 Answer 0
 
 ----------------------------------------------------------------------------------------------------
-| Eval  14 at step     1400 | time: 33.89s | valid loss  0.01 | valid ppl     1.010
+| Eval   5 at step      500 | time: 38.26s | valid loss  0.26 | valid ppl     1.297
 ----------------------------------------------------------------------------------------------------
+| epoch   1 step      600 |    600 batches | lr 0.0001 | ms/batch 384.60 | loss  1.51 | ppl     4.529
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^1e:
-Predicted Answer: 0
-Answer 0
+Query ^7e:
+Predicted Answer: 6
+Answer 5
 
-Query ^7bf:
-Predicted Answer: 1
+Query ^0eb:
+Predicted Answer: 6
 Answer 1
 
-Query ^5gah:
-Predicted Answer: 6
-Answer 6
-
-Query ^3acbf:
-Predicted Answer: 2
-Answer 2
-
-Query ^6ffhhe:
-Predicted Answer: 6
-Answer 6
-
-----------------------------------------------------------------------------------------------------
-| Eval  15 at step     1500 | time: 33.88s | valid loss  0.01 | valid ppl     1.010
-----------------------------------------------------------------------------------------------------
-| epoch   1 step     1600 |   1600 batches | lr 0.0001 | ms/batch 341.97 | loss  0.01 | ppl     1.012
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^4c:
-Predicted Answer: 4
-Answer 4
-
-Query ^0hh:
-Predicted Answer: 0
-Answer 0
-
-Query ^5edb:
-Predicted Answer: 0
-Answer 0
-
-Query ^0haha:
-Predicted Answer: 4
-Answer 4
-
-Query ^1fahgc:
+Query ^5bhd:
 Predicted Answer: 3
-Answer 3
+Answer 4
+
+Query ^0hcch:
+Predicted Answer: 3
+Answer 0
+
+Query ^6aeecd:
+Predicted Answer: 3
+Answer 0
 
 ----------------------------------------------------------------------------------------------------
-| Eval  16 at step     1600 | time: 33.95s | valid loss  0.01 | valid ppl     1.009
+| Eval   6 at step      600 | time: 38.22s | valid loss  0.26 | valid ppl     1.294
 ----------------------------------------------------------------------------------------------------
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
 Query ^3b:
+Predicted Answer: 0
+Answer 7
+
+Query ^5ec:
+Predicted Answer: 1
+Answer 1
+
+Query ^6hhg:
+Predicted Answer: 6
+Answer 2
+
+Query ^2bhhg:
+Predicted Answer: 6
+Answer 0
+
+Query ^0dhcgb:
+Predicted Answer: 6
+Answer 2
+
+----------------------------------------------------------------------------------------------------
+| Eval   7 at step      700 | time: 38.15s | valid loss  0.24 | valid ppl     1.268
+----------------------------------------------------------------------------------------------------
+| epoch   1 step      800 |    800 batches | lr 0.0001 | ms/batch 384.01 | loss  1.49 | ppl     4.429
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^0c:
 Predicted Answer: 7
 Answer 7
 
-Query ^2ge:
-Predicted Answer: 7
-Answer 7
+Query ^7db:
+Predicted Answer: 0
+Answer 0
 
-Query ^2cfa:
-Predicted Answer: 5
-Answer 5
-
-Query ^6chgf:
+Query ^5fcf:
 Predicted Answer: 3
-Answer 3
+Answer 2
 
-Query ^7fhgbe:
+Query ^3hedb:
+Predicted Answer: 3
+Answer 0
+
+Query ^0cgcca:
+Predicted Answer: 1
+Answer 1
+
+----------------------------------------------------------------------------------------------------
+| Eval   8 at step      800 | time: 38.19s | valid loss  0.21 | valid ppl     1.232
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^6e:
 Predicted Answer: 4
 Answer 4
 
+Query ^6fh:
+Predicted Answer: 7
+Answer 7
+
+Query ^4ebd:
+Predicted Answer: 7
+Answer 7
+
+Query ^7ccbb:
+Predicted Answer: 3
+Answer 3
+
+Query ^0gghch:
+Predicted Answer: 3
+Answer 6
+
 ----------------------------------------------------------------------------------------------------
-| Eval  17 at step     1700 | time: 33.87s | valid loss  0.01 | valid ppl     1.009
+| Eval   9 at step      900 | time: 38.11s | valid loss  0.19 | valid ppl     1.214
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step     1800 |   1800 batches | lr 0.0001 | ms/batch 342.11 | loss  0.01 | ppl     1.010
+| epoch   1 step     1000 |   1000 batches | lr 0.0001 | ms/batch 385.28 | loss  1.45 | ppl     4.247
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^3d:
+Predicted Answer: 0
+Answer 0
+
+Query ^3bb:
+Predicted Answer: 6
+Answer 0
+
+Query ^4hhd:
+Predicted Answer: 2
+Answer 7
+
+Query ^0dfea:
+Predicted Answer: 1
+Answer 2
+
+Query ^6bbegc:
+Predicted Answer: 0
+Answer 1
+
+----------------------------------------------------------------------------------------------------
+| Eval  10 at step     1000 | time: 38.46s | valid loss  0.18 | valid ppl     1.200
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^3c:
+Predicted Answer: 0
+Answer 0
+
+Query ^1cg:
+Predicted Answer: 4
+Answer 5
+
+Query ^0eah:
+Predicted Answer: 5
+Answer 7
+
+Query ^1gdbh:
+Predicted Answer: 5
+Answer 2
+
+Query ^6haabc:
+Predicted Answer: 5
+Answer 6
+
+----------------------------------------------------------------------------------------------------
+| Eval  11 at step     1100 | time: 36.18s | valid loss  0.17 | valid ppl     1.186
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     1200 |   1200 batches | lr 0.0001 | ms/batch 354.10 | loss  1.42 | ppl     4.149
 Before eval loop
 After eval loop
 Before generating all tasks
@@ -545,159 +381,324 @@ Query ^6h:
 Predicted Answer: 0
 Answer 0
 
-Query ^0df:
-Predicted Answer: 0
-Answer 0
-
-Query ^6bch:
+Query ^7cg:
 Predicted Answer: 4
 Answer 4
 
-Query ^0gaee:
-Predicted Answer: 3
-Answer 3
+Query ^3fbb:
+Predicted Answer: 2
+Answer 2
 
-Query ^2hfdeh:
-Predicted Answer: 7
-Answer 7
+Query ^1gfeb:
+Predicted Answer: 5
+Answer 5
+
+Query ^6ggdbc:
+Predicted Answer: 4
+Answer 0
 
 ----------------------------------------------------------------------------------------------------
-| Eval  18 at step     1800 | time: 33.91s | valid loss  0.01 | valid ppl     1.009
+| Eval  12 at step     1200 | time: 33.97s | valid loss  0.16 | valid ppl     1.170
 ----------------------------------------------------------------------------------------------------
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^5g:
-Predicted Answer: 0
-Answer 0
+Query ^3h:
+Predicted Answer: 5
+Answer 5
 
-Query ^4cd:
+Query ^7hg:
 Predicted Answer: 4
 Answer 4
 
-Query ^0bch:
+Query ^7cfe:
+Predicted Answer: 4
+Answer 3
+
+Query ^3hhdf:
 Predicted Answer: 0
-Answer 0
+Answer 7
 
-Query ^1hdhf:
-Predicted Answer: 2
-Answer 2
-
-Query ^3fffee:
-Predicted Answer: 1
+Query ^1hgaeg:
+Predicted Answer: 5
 Answer 1
 
 ----------------------------------------------------------------------------------------------------
-| Eval  19 at step     1900 | time: 33.98s | valid loss  0.01 | valid ppl     1.009
+| Eval  13 at step     1300 | time: 33.95s | valid loss  0.15 | valid ppl     1.158
 ----------------------------------------------------------------------------------------------------
-| epoch   1 step     2000 |   2000 batches | lr 0.0001 | ms/batch 342.14 | loss  0.01 | ppl     1.009
+| epoch   1 step     1400 |   1400 batches | lr 0.0001 | ms/batch 342.26 | loss  1.40 | ppl     4.049
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^0f:
+Query ^4c:
+Predicted Answer: 4
+Answer 4
+
+Query ^5gh:
+Predicted Answer: 6
+Answer 6
+
+Query ^6efg:
+Predicted Answer: 4
+Answer 1
+
+Query ^0aedb:
 Predicted Answer: 1
 Answer 1
 
-Query ^3ef:
-Predicted Answer: 4
-Answer 4
-
-Query ^4eaf:
-Predicted Answer: 0
-Answer 0
-
-Query ^5chhh:
-Predicted Answer: 2
-Answer 2
-
-Query ^4ehged:
-Predicted Answer: 2
+Query ^2fbhhd:
+Predicted Answer: 1
 Answer 2
 
 ----------------------------------------------------------------------------------------------------
-| Eval  20 at step     2000 | time: 33.98s | valid loss  0.01 | valid ppl     1.008
+| Eval  14 at step     1400 | time: 33.90s | valid loss  0.13 | valid ppl     1.144
 ----------------------------------------------------------------------------------------------------
 Before eval loop
 After eval loop
 Before generating all tasks
 Generating all tasks
-Query ^5f:
-Predicted Answer: 6
-Answer 6
+Query ^1f:
+Predicted Answer: 4
+Answer 4
 
-Query ^7bg:
+Query ^2bh:
+Predicted Answer: 3
+Answer 3
+
+Query ^1hgf:
+Predicted Answer: 5
+Answer 2
+
+Query ^3ehdf:
+Predicted Answer: 2
+Answer 1
+
+Query ^7hfgca:
+Predicted Answer: 7
+Answer 0
+
+----------------------------------------------------------------------------------------------------
+| Eval  15 at step     1500 | time: 33.82s | valid loss  0.13 | valid ppl     1.137
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     1600 |   1600 batches | lr 0.0001 | ms/batch 341.70 | loss  1.38 | ppl     3.978
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^0g:
 Predicted Answer: 7
 Answer 7
 
-Query ^7dgh:
-Predicted Answer: 3
+Query ^2bd:
+Predicted Answer: 6
+Answer 6
+
+Query ^7eef:
+Predicted Answer: 2
 Answer 3
 
-Query ^5eahe:
+Query ^2fdfe:
+Predicted Answer: 4
+Answer 3
+
+Query ^3bdbhd:
+Predicted Answer: 1
+Answer 5
+
+----------------------------------------------------------------------------------------------------
+| Eval  16 at step     1600 | time: 34.04s | valid loss  0.12 | valid ppl     1.131
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^6g:
 Predicted Answer: 2
 Answer 2
 
-Query ^2ahaed:
-Predicted Answer: 4
-Answer 4
-
-----------------------------------------------------------------------------------------------------
-| Eval  21 at step     2100 | time: 34.00s | valid loss  0.01 | valid ppl     1.009
-----------------------------------------------------------------------------------------------------
-| epoch   1 step     2200 |   2200 batches | lr 0.0001 | ms/batch 340.45 | loss  0.01 | ppl     1.009
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^1h:
-Predicted Answer: 3
-Answer 3
-
-Query ^2fh:
-Predicted Answer: 4
-Answer 4
-
-Query ^4fhb:
-Predicted Answer: 3
-Answer 3
-
-Query ^6fbdc:
+Query ^0ga:
 Predicted Answer: 6
 Answer 6
 
-Query ^7ehced:
-Predicted Answer: 0
-Answer 0
-
-----------------------------------------------------------------------------------------------------
-| Eval  22 at step     2200 | time: 33.70s | valid loss  0.01 | valid ppl     1.008
-----------------------------------------------------------------------------------------------------
-Before eval loop
-After eval loop
-Before generating all tasks
-Generating all tasks
-Query ^7a:
-Predicted Answer: 6
-Answer 6
-
-Query ^1fg:
-Predicted Answer: 3
-Answer 3
-
-Query ^6fdb:
+Query ^4ebc:
 Predicted Answer: 1
 Answer 1
 
-Query ^2adce:
+Query ^4fceg:
+Predicted Answer: 5
+Answer 7
+
+Query ^2dcbfg:
+Predicted Answer: 5
+Answer 2
+
+----------------------------------------------------------------------------------------------------
+| Eval  17 at step     1700 | time: 34.11s | valid loss  0.12 | valid ppl     1.124
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     1800 |   1800 batches | lr 0.0001 | ms/batch 343.70 | loss  1.37 | ppl     3.930
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^1c:
+Predicted Answer: 2
+Answer 2
+
+Query ^6bc:
+Predicted Answer: 5
+Answer 5
+
+Query ^3bff:
+Predicted Answer: 3
+Answer 0
+
+Query ^4adhb:
+Predicted Answer: 1
+Answer 1
+
+Query ^6geahg:
+Predicted Answer: 5
+Answer 3
+
+----------------------------------------------------------------------------------------------------
+| Eval  18 at step     1800 | time: 34.08s | valid loss  0.11 | valid ppl     1.116
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^4g:
+Predicted Answer: 3
+Answer 3
+
+Query ^5gc:
 Predicted Answer: 7
 Answer 7
 
-Query ^0haagb:
-Predicted Answer: 4
+Query ^7dag:
+Predicted Answer: 2
+Answer 2
+
+Query ^3afab:
+Predicted Answer: 6
+Answer 6
+
+Query ^5bhfcg:
+Predicted Answer: 5
 Answer 4
 
 ----------------------------------------------------------------------------------------------------
-| Eval  23 at step     2300 | time: 33.90s | valid loss  0.01 | valid ppl     1.008
+| Eval  19 at step     1900 | time: 33.93s | valid loss  0.10 | valid ppl     1.109
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     2000 |   2000 batches | lr 0.0001 | ms/batch 343.06 | loss  1.36 | ppl     3.881
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^1g:
+Predicted Answer: 4
+Answer 4
+
+Query ^1eh:
+Predicted Answer: 6
+Answer 6
+
+Query ^7gaf:
+Predicted Answer: 2
+Answer 3
+
+Query ^0haeh:
+Predicted Answer: 7
+Answer 1
+
+Query ^5bbfac:
+Predicted Answer: 2
+Answer 3
+
+----------------------------------------------------------------------------------------------------
+| Eval  20 at step     2000 | time: 33.99s | valid loss  0.10 | valid ppl     1.103
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^3c:
+Predicted Answer: 0
+Answer 0
+
+Query ^7ec:
+Predicted Answer: 3
+Answer 3
+
+Query ^7ehd:
+Predicted Answer: 4
+Answer 4
+
+Query ^2hfhh:
+Predicted Answer: 5
+Answer 4
+
+Query ^3bdcce:
+Predicted Answer: 4
+Answer 6
+
+----------------------------------------------------------------------------------------------------
+| Eval  21 at step     2100 | time: 33.90s | valid loss  0.09 | valid ppl     1.094
+----------------------------------------------------------------------------------------------------
+| epoch   1 step     2200 |   2200 batches | lr 0.0001 | ms/batch 341.54 | loss  1.34 | ppl     3.831
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^3a:
+Predicted Answer: 3
+Answer 3
+
+Query ^2ga:
+Predicted Answer: 1
+Answer 1
+
+Query ^1eee:
+Predicted Answer: 5
+Answer 6
+
+Query ^0dcfd:
+Predicted Answer: 0
+Answer 6
+
+Query ^6dggcg:
+Predicted Answer: 7
+Answer 4
+
+----------------------------------------------------------------------------------------------------
+| Eval  22 at step     2200 | time: 33.86s | valid loss  0.08 | valid ppl     1.086
+----------------------------------------------------------------------------------------------------
+Before eval loop
+After eval loop
+Before generating all tasks
+Generating all tasks
+Query ^1a:
+Predicted Answer: 7
+Answer 7
+
+Query ^4gf:
+Predicted Answer: 0
+Answer 0
+
+Query ^4cbe:
+Predicted Answer: 3
+Answer 3
+
+Query ^3gbhh:
+Predicted Answer: 7
+Answer 1
+
+Query ^6gffbf:
+Predicted Answer: 2
+Answer 5
+
+----------------------------------------------------------------------------------------------------
+| Eval  23 at step     2300 | time: 33.99s | valid loss  0.08 | valid ppl     1.079
 ----------------------------------------------------------------------------------------------------
