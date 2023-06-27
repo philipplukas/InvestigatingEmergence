@@ -1,0 +1,55 @@
+program: train.py
+method: grid
+
+parameters:
+  mixing-rate:
+    values: [0.1, 0.125, 0.15, 0.175]
+
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - "--cuda" 
+  - "--data" 
+  -   "data/mixed/"
+  - "--dataset" 
+  -   "mixed" 
+  - "--n_layer" 
+  -   "12" 
+  - "--d_model"
+  -   "512" 
+  - "--n_head"  
+  -   "8" 
+  - "--d_head"
+  -   "16" 
+  - "--d_inner"
+  -   "256" 
+  - "--dropatt"
+  -   "0.0"
+  - "--dropout"
+  -   "0.1" 
+  - "--optim"
+  -   "adam" 
+  - "--lr" 
+  -   "1e-04" 
+  - "--warmup_step" 
+  -   "0"
+  - "--max_step"  
+  -   "10000000"
+  - "--tgt_len" 
+  -   "128"
+  - "--eval_tgt_len" 
+  -   "128"
+  - "--ext_len" 
+  -   "0"
+  - "--scheduler" 
+  -   "constant"
+  - "--mem_len" 
+  -   "0"
+  - "--attn_type"
+  -   "0"
+  - "--batch_size" 
+  -   "128"
+  - "--eval-interval" 
+  -   "100"
+  - ${args}

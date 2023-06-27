@@ -233,6 +233,8 @@ def init():
         valid_data = valid_data_ctl #MixedDataset(valid_data_ctl, valid_data_enwik, args.batch_size, 0.9, device)
         test_data = test_data_ctl #MixedDataset(test_data_ctl, test_data_enwik, args.batch_size, 0.9, device)
 
+    mixed_data = train_data
+
     if args.dataset == "mixed":
         # This data already comes in batched from
         tr_iter = DataLoader(train_data, batch_size=None)
@@ -434,11 +436,11 @@ def init():
 
     if args.dataset == "mixed":
         if scheduler:
-            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab ,scheduler
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab ,scheduler, mixed_data
         else:
-            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab ,None
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab ,None, mixed_data
     else:
         if scheduler:
-            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, scheduler
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, scheduler, mixed_data
         else:
-            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None
+            return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None, mixed_data

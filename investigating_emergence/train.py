@@ -36,7 +36,7 @@ import init
 from itertools import cycle, islice
 
 # return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None
-args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab, scheduler = init.init()
+args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab, scheduler, mixed_data = init.init()
 
 va_iter = cycle(iter(va_iter))
 
@@ -45,6 +45,9 @@ va_iter = cycle(iter(va_iter))
 wandb.init(
     # set the wandb project where this run will be logged
     project="investigating-emergence",
+
+    # https://github.com/wandb/wandb/issues/3433
+    dir="/cluster/home/guphilip/SemesterProject/non-synced",
     
     # track hyperparameters and run metadata
     config={
@@ -98,9 +101,9 @@ valid_stats = get_data_statistics("valid")
 # In case there is an exception, still finish wandb run
 
 
-#def notify_exception(type, value, tb):
-#    wandb.finish()
-#sys.excepthook = notify_exception
+# def notify_exception(type, value, tb):
+#     wandb.finish()
+# sys.excepthook = notify_exception
 
 
 train_iter = iter(cycle(tr_iter))
@@ -441,7 +444,9 @@ def train():
                 wandb.log({"ctl_cross_entropy_val": val_loss, 
                         "ctl_ppl_val": math.exp(val_loss),
                         "enwik8_cross_entropy_val": enwik_loss, 
-                        "enwik8_ppl_val": math.exp(enwik_loss)})
+                        "enwik8_ppl_val": math.exp(enwik_loss),
+                        "enwik_batches": mixed_data.enwik_batches,
+                        "ctl_batches": mixed_data.ctl_batches})
                         #"correct answers": total_correct})
 
                 for idx, el in enumerate(correct):

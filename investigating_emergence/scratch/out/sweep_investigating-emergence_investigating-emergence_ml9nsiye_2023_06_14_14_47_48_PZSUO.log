@@ -1,0 +1,35 @@
+slurmstepd: error: couldn't chdir to `/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/scratch/SemesterProject/InvestigatingEmergence/investigating_emergence': No such file or directory: going to /tmp instead
+slurmstepd: error: couldn't chdir to `/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/scratch/SemesterProject/InvestigatingEmergence/investigating_emergence': No such file or directory: going to /tmp instead
+wandb: Starting wandb agent 🕵️
+wandb: Starting wandb agent 🕵️
+wandb: Starting wandb agent 🕵️
+2023-06-14 14:48:01,610 - wandb.wandb_agent - INFO - Running runs: []
+2023-06-14 14:48:01,775 - wandb.wandb_agent - INFO - Running runs: []
+2023-06-14 14:48:01,792 - wandb.wandb_agent - INFO - Running runs: []
+2023-06-14 14:48:02,226 - wandb.wandb_agent - INFO - Agent received command: run
+2023-06-14 14:48:02,226 - wandb.wandb_agent - INFO - Agent starting run with config:
+	mixing-rate: 0.2
+2023-06-14 14:48:02,229 - wandb.wandb_agent - INFO - About to run command: /usr/bin/env python ../train.py --cuda --data data/mixed/ --dataset mixed --n_layer 12 --d_model 512 --n_head 8 --d_head 16 --d_inner 256 --dropatt 0.0 --dropout 0.1 --optim adam --lr 0.0001 warmup_step 0 --max_step 10000000 --tgt_len 128 --eval_tgt_len 128 --ext_len 0 --scheduler constant --mem_len 0 --attn_type 0 --batch_size 128 --eval-interval 100 --mixing-rate=0.2
+python: can't open file '../train.py': [Errno 2] No such file or directory
+2023-06-14 14:48:02,269 - wandb.wandb_agent - INFO - Agent received command: run
+2023-06-14 14:48:02,269 - wandb.wandb_agent - INFO - Agent starting run with config:
+	mixing-rate: 0.4
+2023-06-14 14:48:02,272 - wandb.wandb_agent - INFO - About to run command: /usr/bin/env python ../train.py --cuda --data data/mixed/ --dataset mixed --n_layer 12 --d_model 512 --n_head 8 --d_head 16 --d_inner 256 --dropatt 0.0 --dropout 0.1 --optim adam --lr 0.0001 warmup_step 0 --max_step 10000000 --tgt_len 128 --eval_tgt_len 128 --ext_len 0 --scheduler constant --mem_len 0 --attn_type 0 --batch_size 128 --eval-interval 100 --mixing-rate=0.4
+python: can't open file '../train.py': [Errno 2] No such file or directory
+2023-06-14 14:48:02,312 - wandb.wandb_agent - INFO - Agent received command: run
+2023-06-14 14:48:02,312 - wandb.wandb_agent - INFO - Agent starting run with config:
+	mixing-rate: 0.6
+2023-06-14 14:48:02,314 - wandb.wandb_agent - INFO - About to run command: /usr/bin/env python ../train.py --cuda --data data/mixed/ --dataset mixed --n_layer 12 --d_model 512 --n_head 8 --d_head 16 --d_inner 256 --dropatt 0.0 --dropout 0.1 --optim adam --lr 0.0001 warmup_step 0 --max_step 10000000 --tgt_len 128 --eval_tgt_len 128 --ext_len 0 --scheduler constant --mem_len 0 --attn_type 0 --batch_size 128 --eval-interval 100 --mixing-rate=0.6
+python: can't open file '../train.py': [Errno 2] No such file or directory
+2023-06-14 14:48:07,242 - wandb.wandb_agent - INFO - Running runs: ['n6wwhevi']
+2023-06-14 14:48:07,243 - wandb.wandb_agent - INFO - Cleaning up finished run: n6wwhevi
+2023-06-14 14:48:07,282 - wandb.wandb_agent - INFO - Running runs: ['aryj1l8l']
+2023-06-14 14:48:07,283 - wandb.wandb_agent - INFO - Cleaning up finished run: aryj1l8l
+2023-06-14 14:48:07,324 - wandb.wandb_agent - INFO - Running runs: ['6wz2zw46']
+2023-06-14 14:48:07,325 - wandb.wandb_agent - INFO - Cleaning up finished run: 6wz2zw46
+wandb: Terminating and syncing runs. Press ctrl-c to kill.
+wandb: Terminating and syncing runs. Press ctrl-c to kill.
+wandb: Terminating and syncing runs. Press ctrl-c to kill.
+slurmstepd: error: run_script_as_user: couldn't change working dir to /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/scratch/SemesterProject/InvestigatingEmergence/investigating_emergence: No such file or directory
+slurmstepd: error: run_script_as_user: couldn't change working dir to /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/scratch/SemesterProject/InvestigatingEmergence/investigating_emergence: No such file or directory
+slurmstepd: error: run_script_as_user: couldn't change working dir to /cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/scratch/SemesterProject/InvestigatingEmergence/investigating_emergence: No such file or directory

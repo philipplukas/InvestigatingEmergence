@@ -10,7 +10,7 @@
 srun python train.py \
         --cuda \
         --data data/mixed/ \
-        --dataset ctl \
+        --dataset mixed \
         --n_layer 12 \
         --d_model 512 \
         --n_head 8 \
@@ -29,4 +29,5 @@ srun python train.py \
         --mem_len 0 \
 	--attn_type 0 \
         --batch_size 128 \
-        --eval-interval 100
+        --eval-interval 100 \
+	--mixing-rate 0.5

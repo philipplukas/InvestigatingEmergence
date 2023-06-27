@@ -21,6 +21,10 @@ class MixedDataset(IterableDataset):
         self.task_ratio = task_ratio
         self.device = device
 
+        self.total_batches  = 0
+        self.ctl_batches = 0
+        self.enwik_batches = 0
+
     def get_vocab(self):
         return self.vocab
 
@@ -30,10 +34,15 @@ class MixedDataset(IterableDataset):
     def __next__(self):
         if random.random() < self.task_ratio:
             try:
+                self.total_batches += 1
+                self.ctl_batches += 1 
                 return next(self.data_laoder1)
             except StopIteration:
                 # In this case try to get data from the other data stream
                 pass
+
+        self.total_batches += 1
+        self.enwik_batches += 1
         
         in_tensor, out_tensor, _, _ = next(self.data_laoder2)
         mask = torch.zeros(out_tensor.shape, device=self.device)
