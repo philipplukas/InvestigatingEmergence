@@ -292,27 +292,27 @@ def init():
         classname = m.__class__.__name__
         if classname.find('Linear') != -1:
             if hasattr(m, 'weight') and m.weight is not None:
-                if args.pre_lnorm:
-                    nn.init.uniform_(m.weight, -np.sqrt(args.d_model), np.sqrt(args.d_model))
-                else:
-                    init_weight(m.weight)
+                #if args.pre_lnorm:
+                #    nn.init.uniform_(m.weight, -np.sqrt(3/args.d_model), np.sqrt(3/args.d_model))
+                #else:
+                init_weight(m.weight)
             if hasattr(m, 'bias') and m.bias is not None:
-                if args.pre_lnorm:
-                    nn.init.uniform_(m.bias, -np.sqrt(args.d_model), np.sqrt(args.d_model))
-                else:
-                    init_bias(m.bias)
+                #if args.pre_lnorm:
+                #    nn.init.uniform_(m.bias, -np.sqrt(3/args.d_model), np.sqrt(3/args.d_model))
+                #else:
+                init_bias(m.bias)
         elif classname.find('AdaptiveEmbedding') != -1:
             if hasattr(m, 'emb_projs'):
                 for i in range(len(m.emb_projs)):
                     if m.emb_projs[i] is not None:
                         if args.pre_lnorm:
-                            nn.init.uniform_(m.emb_projs[i], -np.sqrt(args.d_model), np.sqrt(args.d_model))
+                            nn.init.uniform_(m.emb_projs[i], -np.sqrt(3/args.d_model), np.sqrt(3/args.d_model))
                         else:
                             nn.init.normal_(m.emb_projs[i], 0.0, args.proj_init_std)
         elif classname.find('Embedding') != -1:
             if hasattr(m, 'weight'):
                 if args.pre_lnorm:
-                    nn.init.uniform_(m.weight, -np.sqrt(args.d_model), np.sqrt(args.d_model))
+                    nn.init.uniform_(m.weight, -np.sqrt(3/args.d_model), np.sqrt(3/args.d_model))
                 else:
                     init_weight(m.weight)
         elif classname.find('ProjectedAdaptiveLogSoftmax') != -1:

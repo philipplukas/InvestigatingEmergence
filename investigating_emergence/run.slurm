@@ -12,7 +12,7 @@ srun python train.py \
         --data data/mixed/ \
         --dataset mixed \
         --n_layer 12 \
-        --d_model 512 \
+        --d_model 128 \
         --n_head 8 \
         --d_head 16 \
         --d_inner 256 \

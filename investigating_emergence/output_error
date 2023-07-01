@@ -1,11 +1,8 @@
 wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
 wandb: Tracking run with wandb version 0.14.0
-wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/non-synced/wandb/run-20230628_113222-tvi720tv
+wandb: Run data is saved locally in /cluster/home/guphilip/SemesterProject/non-synced/wandb/run-20230701_152241-zm0drnhl
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run golden-snowball-157
+wandb: Syncing run youthful-bee-163
 wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
-wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/tvi720tv
+wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/zm0drnhl
 wandb: Network error (TransientError), entering retry loop.
-srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
-slurmstepd: error: *** STEP 19601476.0 ON eu-lo-s4-085 CANCELLED AT 2023-06-28T11:33:00 ***
-slurmstepd: error: *** JOB 19601476 ON eu-lo-s4-085 CANCELLED AT 2023-06-28T11:33:00 ***

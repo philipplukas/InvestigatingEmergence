@@ -511,6 +511,7 @@ class MemTransformerLM(nn.Module):
 
         self.word_emb = AdaptiveEmbedding(n_token, d_embed, d_model, cutoffs, 
                                           div_val=div_val)
+        self.layer_norm = nn.LayerNorm(d_model)
 
         self.drop = nn.Dropout(dropout)
 
@@ -522,6 +523,7 @@ class MemTransformerLM(nn.Module):
         self.max_klen = tgt_len + ext_len + mem_len
 
         self.attn_type = attn_type
+        self.pre_lnorm = pre_lnorm
 
         self.layers = nn.ModuleList()
         if attn_type == 0: # the default attention
