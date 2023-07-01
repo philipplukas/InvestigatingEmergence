@@ -156,6 +156,13 @@ def init():
     args = parser.parse_args()
     args.tied = not args.not_tied
 
+
+    # Inner width to twice the model width
+    args.d_inner = 4*args.d_model
+
+    # Adapt head dimension accoding to model dimension and number of heads
+    args.d_head = args.d_model // args.n_head
+
     # DEBUG
     # args.batch_size = 1
 
@@ -269,6 +276,10 @@ def init():
     # Build the model
     ###############################################################################
     def init_weight(weight):
+        if args.pre_lnorm:
+            nn.init.normal_(weight, 0.0, np.sqrt(2 / (args.n_layer * args.d_model)))
+            return
+
         if args.init == 'uniform':
             nn.init.uniform_(weight, -args.init_range, args.init_range)
         elif args.init == 'normal':

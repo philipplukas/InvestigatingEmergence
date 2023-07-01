@@ -1,1 +1,1 @@
-ct -s -m localhost wandb sweep sweeps/sweep.yml -r 4 -t 00:59:00
+ct -s -m localhost wandb sweep sweeps/sweep.yml -r 6 -t 04:00:00
