@@ -30,4 +30,5 @@ srun python train.py \
 	--attn_type 0 \
         --batch_size 128 \
         --eval-interval 100 \
-	--mixing-rate 0.5
+	--mixing-rate 1 \
+        --pre_lnorm

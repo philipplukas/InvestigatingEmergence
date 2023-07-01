@@ -156,6 +156,13 @@ def init():
     args = parser.parse_args()
     args.tied = not args.not_tied
 
+
+    # Inner width to twice the model width
+    args.d_inner = 4*args.d_model
+
+    # Adapt head dimension accoding to model dimension and number of heads
+    args.d_head = args.d_model // args.n_head
+
     # DEBUG
     # args.batch_size = 1
 
@@ -268,7 +275,11 @@ def init():
     ###############################################################################
     # Build the model
     ###############################################################################
-    def init_weight(weight):
+    def init_weight(weight, d_layer_input=args.d_model):
+        if args.pre_lnorm:
+            nn.init.normal_(weight, 0.0, np.sqrt(2 / (args.n_layer * d_layer_input)))
+            return
+
         if args.init == 'uniform':
             nn.init.uniform_(weight, -args.init_range, args.init_range)
         elif args.init == 'normal':
@@ -281,17 +292,29 @@ def init():
         classname = m.__class__.__name__
         if classname.find('Linear') != -1:
             if hasattr(m, 'weight') and m.weight is not None:
-                init_weight(m.weight)
+                #if args.pre_lnorm:
+                #    nn.init.uniform_(m.weight, -np.sqrt(3/args.d_model), np.sqrt(3/args.d_model))
+                #else:
+                init_weight(m.weight, args.d_model)
             if hasattr(m, 'bias') and m.bias is not None:
+                #if args.pre_lnorm:
+                #    nn.init.uniform_(m.bias, -np.sqrt(3/args.d_model), np.sqrt(3/args.d_model))
+                #else:
                 init_bias(m.bias)
         elif classname.find('AdaptiveEmbedding') != -1:
             if hasattr(m, 'emb_projs'):
                 for i in range(len(m.emb_projs)):
                     if m.emb_projs[i] is not None:
-                        nn.init.normal_(m.emb_projs[i], 0.0, args.proj_init_std)
+                        if args.pre_lnorm:
+                            nn.init.kaiming_normal_(m.emb_projs[i], mode="fan_in", nonlinearity="linear")
+                        else:
+                            nn.init.normal_(m.emb_projs[i], 0.0, args.proj_init_std)
         elif classname.find('Embedding') != -1:
             if hasattr(m, 'weight'):
-                init_weight(m.weight)
+                if args.pre_lnorm:
+                    nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="linear")
+                else:
+                    init_weight(m.weight)
         elif classname.find('ProjectedAdaptiveLogSoftmax') != -1:
             if hasattr(m, 'cluster_weight') and m.cluster_weight is not None:
                 init_weight(m.cluster_weight)
@@ -300,10 +323,18 @@ def init():
             if hasattr(m, 'out_projs'):
                 for i in range(len(m.out_projs)):
                     if m.out_projs[i] is not None:
-                        nn.init.normal_(m.out_projs[i], 0.0, args.proj_init_std)
+                        if args.pre_lnorm:
+                            init_weight(m.out_projs[i])
+                            #nn.init.normal_(m.out_projs[i], 0.0, args.proj_init_std)
+                        else:
+                            nn.init.normal_(m.out_projs[i], 0.0, args.proj_init_std)
         elif classname.find('LayerNorm') != -1:
             if hasattr(m, 'weight'):
-                nn.init.normal_(m.weight, 1.0, args.init_std)
+                if args.pre_lnorm:
+                    nn.init.normal_(m.weight, 1.0, args.init_std)
+                    #init_weight(m.weight)
+                else:
+                    nn.init.normal_(m.weight, 1.0, args.init_std)
             if hasattr(m, 'bias') and m.bias is not None:
                 init_bias(m.bias)
         elif classname.find('TransformerLM') != -1:

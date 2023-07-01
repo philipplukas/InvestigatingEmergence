@@ -3,7 +3,12 @@ method: grid
 
 parameters:
   mixing-rate:
-    values: [0.1, 0.125, 0.15, 0.175]
+    values: [0.2]
+  n_layer:
+    values: [4, 8]
+  d_model:
+    values: [256, 512, 1024]
+  
 
 command:
   - ${env}
@@ -14,10 +19,6 @@ command:
   -   "data/mixed/"
   - "--dataset" 
   -   "mixed" 
-  - "--n_layer" 
-  -   "12" 
-  - "--d_model"
-  -   "512" 
   - "--n_head"  
   -   "8" 
   - "--d_head"
@@ -47,9 +48,10 @@ command:
   - "--mem_len" 
   -   "0"
   - "--attn_type"
-  -   "0"
+  -   "2"
   - "--batch_size" 
   -   "128"
   - "--eval-interval" 
   -   "100"
+  - "--pre_lnorm"
   - ${args}
