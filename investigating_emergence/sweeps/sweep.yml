@@ -53,4 +53,5 @@ command:
   -   "128"
   - "--eval-interval" 
   -   "100"
+  - "--pre_lnorm"
   - ${args}
