@@ -27,7 +27,7 @@ srun python train.py \
 	--ext_len 0 \
         --scheduler constant \
         --mem_len 0 \
-	--attn_type 0 \
+	--attn_type 2 \
         --batch_size 128 \
         --eval-interval 100 \
 	--mixing-rate 0.5

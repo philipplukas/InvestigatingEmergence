@@ -48,7 +48,7 @@ command:
   - "--mem_len" 
   -   "0"
   - "--attn_type"
-  -   "0"
+  -   "2"
   - "--batch_size" 
   -   "128"
   - "--eval-interval" 
