@@ -441,24 +441,33 @@ def train():
 
             # log metrics to wandb
             if args.dataset == 'mixed':
+
+                depth_correct = {}
+                for idx, el in enumerate(correct):
+                    depth_correct["ctl: correct answers depth {}".format(idx+1)] =  el
+
                 wandb.log({"ctl_cross_entropy_val": val_loss, 
                         "ctl_ppl_val": math.exp(val_loss),
                         "enwik8_cross_entropy_val": enwik_loss, 
                         "enwik8_ppl_val": math.exp(enwik_loss),
                         "enwik_batches": mixed_data.enwik_batches,
-                        "ctl_batches": mixed_data.ctl_batches})
+                        "ctl_batches": mixed_data.ctl_batches,
+                        **depth_correct})
                         #"correct answers": total_correct})
 
-                for idx, el in enumerate(correct):
-                    wandb.log({"ctl: correct answers depth {}".format(idx+1): el})
+                
 
             elif args.dataset == "ctl":
+
+                depth_correct = {}
+                for idx, el in enumerate(correct):
+                    depth_correct["ctl: correct answers depth {}".format(idx+1)] =  el
+
                 wandb.log({"ctl_cross_entropy_val": val_loss, 
-                        "ctl_ppl_val": math.exp(val_loss)})
+                        "ctl_ppl_val": math.exp(val_loss),
+                        **depth_correct})
                         #"correct answers": total_correct})
 
-                for idx, el in enumerate(correct):
-                    wandb.log({"ctl: correct answers depth {}".format(idx+1): el})
             else:
                 wandb.log({"cross_entropy_val": val_loss, 
                             "ppl_val": math.exp(val_loss)})
