@@ -153,12 +153,14 @@ def init():
                         help='Percentage of data coming from ctl-task, between 0 and 1')
     parser.add_argument('--use-mask-training',  action="store_true", 
                         help='Percentage of data coming from ctl-task, between 0 and 1')
+    parser.add_argument('--accumulate-gradients', type=int, default=1,
+                        help='How many gradients to accumulate before doing an update step')
     args = parser.parse_args()
     args.tied = not args.not_tied
 
 
     # Inner width to twice the model width
-    args.d_inner = 4*args.d_model
+    args.d_inner = 3*args.d_model
 
     # Adapt head dimension accoding to model dimension and number of heads
     args.d_head = args.d_model // args.n_head

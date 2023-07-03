@@ -28,7 +28,9 @@ srun python train.py \
         --scheduler constant \
         --mem_len 0 \
 	--attn_type 0 \
-        --batch_size 128 \
+        --batch_size 64 \
         --eval-interval 100 \
 	--mixing-rate 1 \
-        --pre_lnorm
+        --pre_lnorm \
+        --work_dir "$SCRATCH/LM-TFM" \
+        --accumulate-gradients 2 

@@ -47,7 +47,7 @@ wandb.init(
     project="investigating-emergence",
 
     # https://github.com/wandb/wandb/issues/3433
-    dir="/cluster/home/guphilip/SemesterProject/non-synced",
+    dir="/cluster/scratch/guphilip/wandb",
     
     # track hyperparameters and run metadata
     config={
@@ -346,7 +346,7 @@ def train():
 
         mask =  mask.transpose(0,1).contiguous()
 
-        model.zero_grad()
+        #model.zero_grad()
         if args.batch_chunk > 1:
             data_chunks = torch.chunk(data, args.batch_chunk, 1)
             target_chunks = torch.chunk(target, args.batch_chunk, 1)
@@ -370,6 +370,9 @@ def train():
             else:
                 loss = loss.float().mean().type_as(loss)
 
+            # Normalize to accomadate for gradient accumulation
+            loss = loss / args.accumulate_gradients
+
             wandb.log({"train_cross_entropy": loss, "train_ppl": math.exp(loss)})
             if args.fp16:
                 optimizer.backward(loss)
@@ -382,9 +385,11 @@ def train():
         else:
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
 
-        optimizer.step()
-        if args.sample_softmax > 0:
-            optimizer_sparse.step()
+        if (train_step % args.accumulate_gradients == 0):
+            optimizer.step()
+            if args.sample_softmax > 0:
+                optimizer_sparse.step()
+            model.zero_grad()
 
         # step-wise learning rate annealing
         train_step += 1
@@ -403,7 +408,7 @@ def train():
         elif args.scheduler == 'inv_sqrt':
             scheduler.step(train_step)
 
-        if train_step % args.log_interval == 0:
+        if train_step % (args.log_interval * args.accumulate_gradients) == 0:
             cur_loss = train_loss / args.log_interval
             elapsed = time.time() - log_start_time
             log_str = '| epoch {:3d} step {:>8d} | {:>6d} batches | lr {:.3g} ' \
@@ -418,7 +423,7 @@ def train():
             train_loss = 0
             log_start_time = time.time()
 
-        if train_step % args.eval_interval == 0:
+        if train_step % (args.eval_interval * args.accumulate_gradients) == 0:
         #if True:
             #logging("Before calling eval")
             if args.dataset == 'mixed':
