@@ -1,6 +1,7 @@
 
 import transformer_xl.pytorch
-from transformer_xl.pytorch.mem_transformer import MemTransformerLM
+from transformer_xl.pytorch.utils import proj_adaptive_softmax
+from transformer_xl.pytorch import mem_transformer
 from transformer_xl.pytorch.data_utils import get_lm_corpus
 import torch
 import sys
@@ -12,8 +13,8 @@ Evaluate language model on specifc task.
 class Evaluator:
     
     def __init__(self, device="gpu") -> None:
-        model = torch.load("transformer-xl/pytorch/LM-TFM-ctl/20230307-110317/model.pt")
-        model.to(torch.device(device))
+        model = torch.load("transformer_xl/pytorch/LM-TFM-ctl/20230307-110317/model.pt")
+        model = model.to(torch.device(device))
         model.eval()
 
         self.model = model
@@ -69,6 +70,6 @@ class Evaluator:
 
 if __name__ == "__main__":
     sys.path.append('transformer_xl/pytorch/utils')
-    evaluate = Evaluator(device="gpu")
+    evaluate = Evaluator(device="cpu")
     score = evaluate.calculate_accuracy('data/ctl/valid.txt')
     print("score: {}".format(score))
