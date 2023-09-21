@@ -4,6 +4,14 @@ from torch.utils.data import IterableDataset, DataLoader
 
 from itertools import cycle
 
+#https://github.com/pytorch/pytorch/issues/23900
+def cycle(iterable):
+    iterator = iter(iterable)
+    while True:
+        try:
+            yield next(iterator)
+        except StopIteration:
+            iterator = iter(iterable)
 
 
 """
@@ -18,6 +26,7 @@ class MixedDataset(IterableDataset):
         self.vocab = data_task1.vocab
         self.data_laoder1 = iter(cycle(DataLoader(data_task1, batch_size)))
         self.data_laoder2 = iter(cycle(DataLoader(data_task2, batch_size)))
+        #self.data_laoder2 = iter(DataLoader(data_task2, batch_size))
         self.task_ratio = task_ratio
         self.device = device
 

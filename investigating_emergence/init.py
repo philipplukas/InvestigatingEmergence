@@ -7,17 +7,28 @@ import time
 import torch.nn as nn
 import torch.optim as optim
 
+# Code from orginial TransformerXL implementation
 from transformer_xl.pytorch.mem_transformer import MemTransformerLM
 from transformer_xl.pytorch.utils.exp_utils import create_exp_dir
 from transformer_xl.pytorch.utils.data_parallel import BalancedDataParallel
 
 from torch.utils.data import DataLoader
 
+# Datset implementations of datasets used in our experiments
 from tasks.ctl_task.dataset import CTLDataset
 from tasks.enwik_task.dataset import EnwikDataset
 from tasks.mixed_task.dataset import MixedDataset
 
 from itertools import cycle
+
+#https://github.com/pytorch/pytorch/issues/23900
+def cycle(iterable):
+    iterator = iter(iterable)
+    while True:
+        try:
+            yield next(iterator)
+        except StopIteration:
+            iterator = iter(iterable)
 
 BASE_PATH = os.path.dirname(__file__)
 
@@ -76,7 +87,7 @@ def init():
                         help='gradient clipping')
     parser.add_argument('--clip_nonemb', action='store_true',
                         help='only clip the gradient of non-embedding params')
-    parser.add_argument('--max_step', type=int, default=100000,
+    parser.add_argument('--max_step', type=int, default=1000000,
                         help='upper epoch limit')
     parser.add_argument('--batch_size', type=int, default=1,
                         help='batch size')
@@ -110,7 +121,7 @@ def init():
                         help='report interval')
     parser.add_argument('--eval-interval', type=int, default=4000,
                         help='evaluation interval')
-    parser.add_argument('--work_dir', default='LM-TFM', type=str,
+    parser.add_argument('--work_dir', default='/cluster/scratch/guphilip/LM-TFM', type=str,
                         help='experiment directory.')
     parser.add_argument('--restart', action='store_true',
                         help='restart training from the saved checkpoint')
@@ -148,7 +159,7 @@ def init():
                         help='Use dynamic loss scaling.  If supplied, this argument'
                         ' supersedes --static-loss-scale.')
     
-    # My own arguments not included in transformer-x;
+    # My own arguments not included in TransformerXL code
     parser.add_argument('--mixing-rate',  type=float, default=1, 
                         help='Percentage of data coming from ctl-task, between 0 and 1')
     parser.add_argument('--use-mask-training',  action="store_true", 
@@ -207,6 +218,9 @@ def init():
     # Load data
     ###############################################################################
 
+    # Here we use our own Dataset implementations and give it to the pytorch DataLoader class.
+    # No matter which concrete mode of operation is chosen, we always have train, validation ,and test iterator.
+
     #corpus = get_lm_corpus(args.data, args.dataset)
     #ntokens = len(corpus.vocab)
     #args.n_token = ntokens
@@ -246,10 +260,10 @@ def init():
 
     if args.dataset == "mixed":
         # This data already comes in batched from
-        tr_iter = DataLoader(train_data, batch_size=None)
-        va_iter = DataLoader(valid_data) #, batch_size=None)
-        te_iter = DataLoader(test_data) #, batch_size=None)
-        enwik8_iter = DataLoader(EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "valid", args.eval_tgt_len, device))
+        tr_iter = cycle(DataLoader(train_data, batch_size=None))
+        va_iter = cycle(DataLoader(valid_data)) #, batch_size=None)
+        te_iter = cycle(DataLoader(test_data)) #, batch_size=None)
+        enwik8_iter = cycle(DataLoader(EnwikDataset(os.path.join(BASE_PATH, "data/enwik8/"), "valid", args.eval_tgt_len, device)))
 
     else: 
         # This data already comes in batched from
@@ -277,6 +291,9 @@ def init():
     ###############################################################################
     # Build the model
     ###############################################################################
+
+    # We adjusted some of parameters used in the orginal Transformer-XL code to pursure PreLayerNormalization
+
     def init_weight(weight, d_layer_input=args.d_model):
         if args.pre_lnorm:
             nn.init.normal_(weight, 0.0, np.sqrt(2 / (args.n_layer * d_layer_input)))

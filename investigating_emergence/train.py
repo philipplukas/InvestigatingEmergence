@@ -38,7 +38,7 @@ from itertools import cycle, islice
 # return args, logging, optimizer, None, model, para_model, tr_iter, va_iter, te_iter, None, device, vocab, None
 args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab, scheduler, mixed_data = init.init()
 
-va_iter = cycle(iter(va_iter))
+#va_iter = cycle(iter(va_iter))
 
 
 # start a new wandb run to track this script
@@ -75,8 +75,8 @@ wandb.init(
 )
 
 
-# Log datset statistics
-
+# Log some statistics about the dataset distrbuted
+# We do that because the CTL dataset is generated randomly. 
 train_stats = get_data_statistics("train")
 valid_stats = get_data_statistics("valid")
 
@@ -101,16 +101,19 @@ valid_stats = get_data_statistics("valid")
 # In case there is an exception, still finish wandb run
 
 
-# def notify_exception(type, value, tb):
+#def notify_exception(type, value, tb):
 #     wandb.finish()
-# sys.excepthook = notify_exception
+#sys.excepthook = notify_exception
 
 
-train_iter = iter(cycle(tr_iter))
-va_iter = iter(cycle(va_iter))
+train_iter = iter(tr_iter)
+#islice(train_iter,10000) # To cut off weird behaviour
+va_iter = iter(va_iter)
 
+# We get this spearate datset so we can 
+# get validate the model only one enwik8 data as well.
 if args.dataset == "mixed":
-    enwik8_iter = iter(cycle(enwik8_iter))
+    enwik8_iter = iter(enwik8_iter)
 
 logging('=' * 100)
 for k, v in args.__dict__.items():
@@ -144,6 +147,9 @@ def evaluate(eval_iter):
     with torch.no_grad():
         mems = tuple()
         logging("Before eval loop")
+
+        # We only get the next 50 samples 
+        # to keep the time of the validation procedure minimal
         for i, (data, target, seq_len, mask) in enumerate(islice(eval_iter,50)):
 
             data = data.transpose(0,1).contiguous()
@@ -219,97 +225,97 @@ def evaluate(eval_iter):
             total_len += 1
         logging("After eval loop")
 
-    # Enwik8 loop
+        # Enwik8 loop
 
-    if args.dataset == "mixed":
-        enwik_loss = 0
-        for  batch, (data, target, seq_len, mask) in enumerate(islice(enwik8_iter,5)):
-            data = data.transpose(0,1).contiguous()
-            target = target.transpose(0,1).contiguous()
+        if args.dataset == "mixed":
+            enwik_loss = 0
+            for  batch, (data, target, seq_len, mask) in enumerate(islice(enwik8_iter,5)):
+                data = data.transpose(0,1).contiguous()
+                target = target.transpose(0,1).contiguous()
 
-            ret, _ = para_model(data, target, *mems)
-            loss, mems = ret[0], ret[1:]
-            loss = loss.float().mean().type_as(loss)
+                ret, _ = para_model(data, target, *mems)
+                loss, mems = ret[0], ret[1:]
+                loss = loss.float().mean().type_as(loss)
 
-            enwik_loss += loss
-            #loss = (loss*mask).float().mean().type_as(loss)
+                enwik_loss += loss
+                #loss = (loss*mask).float().mean().type_as(loss)
 
-            #masked_loss = (loss*mask).float().mean().type_as(loss)
-        enwik_loss = enwik_loss / 5
+                #masked_loss = (loss*mask).float().mean().type_as(loss)
+            enwik_loss = enwik_loss / 5
 
-    elif args.dataset == "ctl":
+        elif args.dataset == "ctl":
 
-        """
-        # Compute masked symbols correct.
+            """
+            # Compute masked symbols correct.
 
-        masked_indices = torch.cat(all_mask, 0)
-        predictions = torch.cat(all_predictions, 0)
-        all_targets = torch.cat(all_targets, 0)
-        a = torch.argwhere(masked_indices)
-        total = len(torch.argwhere(masked_indices))
+            masked_indices = torch.cat(all_mask, 0)
+            predictions = torch.cat(all_predictions, 0)
+            all_targets = torch.cat(all_targets, 0)
+            a = torch.argwhere(masked_indices)
+            total = len(torch.argwhere(masked_indices))
 
 
-        correct = total - len(torch.argwhere((predictions-all_targets)*masked_indices))
-        correct_rate = correct / total
+            correct = total - len(torch.argwhere((predictions-all_targets)*masked_indices))
+            correct_rate = correct / total
 
-        # Assume full answers are separated by 0 mask-values
-        index_spans = []
+            # Assume full answers are separated by 0 mask-values
+            index_spans = []
 
-        zero_before = False
-        current_start_index = -1
-        current_idx = 0
+            zero_before = False
+            current_start_index = -1
+            current_idx = 0
 
-        all_mask = torch.flatten(masked_indices)
-        all_targets = torch.flatten(all_targets)
-        predictions = torch.flatten(predictions)
+            all_mask = torch.flatten(masked_indices)
+            all_targets = torch.flatten(all_targets)
+            predictions = torch.flatten(predictions)
 
-        logging("Before indices calculation")
+            logging("Before indices calculation")
 
-        # Calculate indices of continous 1-sequences
-        for el in all_mask:
-            if el.item() == 1:
-                if zero_before:
-                    current_start_index = current_idx
+            # Calculate indices of continous 1-sequences
+            for el in all_mask:
+                if el.item() == 1:
+                    if zero_before:
+                        current_start_index = current_idx
+                    else:
+                        pass    
+
+                    zero_before = False
+
                 else:
-                    pass    
+                    if current_start_index > -1:
+                        index_spans.append( (current_start_index, current_idx) )
+                        current_start_index = -1
 
-                zero_before = False
+                    zero_before = True
+                current_idx += 1
 
-            else:
-                if current_start_index > -1:
-                    index_spans.append( (current_start_index, current_idx) )
-                    current_start_index = -1
+            total_spans = len(index_spans)
+            total_correct = 0
 
-                zero_before = True
-            current_idx += 1
+            for span in index_spans:
+                span_len = span[1] - span[0]
 
-        total_spans = len(index_spans)
-        total_correct = 0
+                #print(torch.sum(predictions[span[0]:span[1]] == all_targets[span[0]:span[1]]))
+                #print(span_len)
+                if torch.sum(predictions[span[0]:span[1]] == all_targets[span[0]:span[1]]).item() == span_len:
+                    total_correct += 1
 
-        for span in index_spans:
-            span_len = span[1] - span[0]
+                #print("predictions") 
+                #print(predictions[span[0]-1:span[1]-1])
+                #print(all_targets[span[0]:span[1]])
 
-            #print(torch.sum(predictions[span[0]:span[1]] == all_targets[span[0]:span[1]]))
-            #print(span_len)
-            if torch.sum(predictions[span[0]:span[1]] == all_targets[span[0]:span[1]]).item() == span_len:
-                total_correct += 1
+            print(vocab.lookup_tokens(predictions[:20].tolist()))
+            print(vocab.lookup_tokens(all_targets[:20].tolist()))
 
-            #print("predictions") 
-            #print(predictions[span[0]-1:span[1]-1])
-            #print(all_targets[span[0]:span[1]])
+            total_correct_rate = total_correct / total_span
+            """
 
-        print(vocab.lookup_tokens(predictions[:20].tolist()))
-        print(vocab.lookup_tokens(all_targets[:20].tolist()))
+        if args.dataset == "ctl" or args.dataset == "mixed":   
 
-        total_correct_rate = total_correct / total_span
-        """
-
-    if args.dataset == "ctl" or args.dataset == "mixed":   
-
-        # Alternative computation
-        evaluator = Evaluator(model,vocab, device, args.tgt_len, 5)
-        total_correct_rate = evaluator.calculate_accuracy()
-        correct_rate = total_correct_rate
+            # Alternative computation
+            evaluator = Evaluator(model,vocab, device, args.tgt_len, 5)
+            total_correct_rate = evaluator.calculate_accuracy()
+            correct_rate = total_correct_rate
 
     # Switch back to the training mode
     model.reset_length(args.tgt_len, args.ext_len, args.mem_len)
@@ -334,10 +340,21 @@ def train():
     else:
         mems = tuple()
     #train_iter = tr_iter.get_varlen_iter() if args.varlen else tr_iter
-    train_iter = iter(tr_iter)
-    train_iter = cycle(train_iter)
+    
+    
+    #train_iter = iter(tr_iter)
+    #train_iter = cycle(train_iter)
+
+    goal_reached = None
+    total_batches = None
 
     for batch, (data, target, seq_len, mask) in enumerate(train_iter):
+
+        #logging(f"batch number: {batch}")
+
+        # Exit condition
+        if goal_reached and (batch >= total_batches):
+            break
 
         # Get it  into the shape expected by the transfor-mem code
         data = data.transpose(0,1).contiguous()
@@ -374,10 +391,11 @@ def train():
             loss = loss / args.accumulate_gradients
 
             wandb.log({"train_cross_entropy": loss, "train_ppl": math.exp(loss)})
-            if args.fp16:
-                optimizer.backward(loss)
-            else:
-                loss.backward()
+            with torch.no_grad():
+                if args.fp16:
+                    optimizer.backward(loss)
+                else:
+                    loss.backward()
             train_loss += loss.float().item()
 
         if args.fp16:
@@ -386,10 +404,11 @@ def train():
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
 
         if (train_step % args.accumulate_gradients == 0):
-            optimizer.step()
-            if args.sample_softmax > 0:
-                optimizer_sparse.step()
-            model.zero_grad()
+            with torch.no_grad():
+                optimizer.step()
+                if args.sample_softmax > 0:
+                    optimizer_sparse.step()
+                model.zero_grad()
 
         # step-wise learning rate annealing
         train_step += 1
@@ -413,7 +432,7 @@ def train():
             elapsed = time.time() - log_start_time
             log_str = '| epoch {:3d} step {:>8d} | {:>6d} batches | lr {:.3g} ' \
                       '| ms/batch {:5.2f} | loss {:5.2f}'.format(
-                epoch, train_step, batch+1, optimizer.param_groups[0]['lr'],
+                1, train_step, batch+1, optimizer.param_groups[0]['lr'],
                 elapsed * 1000 / args.log_interval, cur_loss)
             if args.dataset in ['enwik8', 'text8']:
                 log_str += ' | bpc {:9.5f}'.format(cur_loss / math.log(2))
@@ -460,7 +479,10 @@ def train():
                         **depth_correct})
                         #"correct answers": total_correct})
 
-                
+                if not goal_reached:
+                    if depth_correct["ctl: correct answers depth {}".format(len(correct))] >= 0.9:
+                        goal_reached = True
+                        total_batches = 1.5 * batch
 
             elif args.dataset == "ctl":
 
@@ -508,32 +530,35 @@ eval_start_time = time.time()
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     logging('Start training')
-    for epoch in itertools.count(start=1):
-        train()
-        if train_step == args.max_step:
-            logging('-' * 100)
-            logging('End of training')
-            break
+    #for epoch in itertools.count(start=1):
+    train()
+    if train_step == args.max_step:
+        logging('-' * 100)
+        logging('End of training')
+        #break
 except KeyboardInterrupt:
+#except:
     logging('-' * 100)
     logging('Exiting from training early')
     wandb.finish()
 
+logging("Finishing up")
+
 # Load the best saved model.
-with open(os.path.join(args.work_dir, 'model.pt'), 'rb') as f:
-    model = torch.load(f)
-para_model = model.to(device)
+# with open(os.path.join(args.work_dir, 'model.pt'), 'rb') as f:
+#    model = torch.load(f)
+# para_model = model.to(device)
 
 # Run on test data.
-test_loss = evaluate(te_iter)
-logging('=' * 100)
-if args.dataset in ['enwik8', 'text8']:
-    logging('| End of training | test loss {:5.2f} | test bpc {:9.5f}'.format(
-        test_loss, test_loss / math.log(2)))
-else:
-    logging('| End of training | test loss {:5.2f} | test ppl {:9.3f}'.format(
-        test_loss, math.exp(test_loss)))
-logging('=' * 100)
+#test_loss = evaluate(te_iter)
+#logging('=' * 100)
+#if args.dataset in ['enwik8', 'text8']:
+#    logging('| End of training | test loss {:5.2f} | test bpc {:9.5f}'.format(
+#        test_loss, test_loss / math.log(2)))
+#else:
+#    logging('| End of training | test loss {:5.2f} | test ppl {:9.3f}'.format(
+#        test_loss, math.exp(test_loss)))
+#logging('=' * 100)
 
 # Cleanup wandb 
-# wandb.finish()
+wandb.finish()

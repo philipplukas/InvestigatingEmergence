@@ -1,8 +1,228 @@
+wandb: Starting wandb agent 🕵️
+wandb: Starting wandb agent 🕵️
+2023-09-18 17:00:16,173 - wandb.wandb_agent - INFO - Running runs: []
+2023-09-18 17:00:16,188 - wandb.wandb_agent - INFO - Running runs: []
+2023-09-18 17:00:16,683 - wandb.wandb_agent - INFO - Agent received command: run
+2023-09-18 17:00:16,686 - wandb.wandb_agent - INFO - Agent starting run with config:
+	d_model: 1024
+	mixing-rate: 0.31
+	n_layer: 8
+2023-09-18 17:00:16,705 - wandb.wandb_agent - INFO - About to run command: /usr/bin/env python train.py --cuda --data data/mixed/ --dataset mixed --n_head 8 --d_head 16 --d_inner 256 --dropatt 0.0 --dropout 0.1 --optim adam --lr 0.0001 --warmup_step 0 --max_step 1000000000 --tgt_len 128 --eval_tgt_len 128 --ext_len 0 --scheduler constant --mem_len 0 --attn_type 0 --batch_size 32 --eval-interval 100 --pre_lnorm --accumulate-gradients 4 --d_model=1024 --mixing-rate=0.31 --n_layer=8
+2023-09-18 17:00:16,906 - wandb.wandb_agent - INFO - Agent received command: run
+2023-09-18 17:00:16,906 - wandb.wandb_agent - INFO - Agent starting run with config:
+	d_model: 1024
+	mixing-rate: 1
+	n_layer: 8
+2023-09-18 17:00:16,924 - wandb.wandb_agent - INFO - About to run command: /usr/bin/env python train.py --cuda --data data/mixed/ --dataset mixed --n_head 8 --d_head 16 --d_inner 256 --dropatt 0.0 --dropout 0.1 --optim adam --lr 0.0001 --warmup_step 0 --max_step 1000000000 --tgt_len 128 --eval_tgt_len 128 --ext_len 0 --scheduler constant --mem_len 0 --attn_type 0 --batch_size 32 --eval-interval 100 --pre_lnorm --accumulate-gradients 4 --d_model=1024 --mixing-rate=1 --n_layer=8
+2023-09-18 17:00:21,721 - wandb.wandb_agent - INFO - Running runs: ['e2zknqex']
+2023-09-18 17:00:21,939 - wandb.wandb_agent - INFO - Running runs: ['hamv87xb']
+Traceback (most recent call last):
+  File "train.py", line 39, in <module>
+    args, logging, optimizer, optimizer_sparse, model, para_model, tr_iter, va_iter, te_iter, enwik8_iter, device, vocab, scheduler, mixed_data = init.init()
+  File "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/init.py", line 192, in init
+    logging = create_exp_dir(args.work_dir, debug=args.debug)
+  File "/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/transformer_xl/pytorch/utils/exp_utils.py", line 25, in create_exp_dir
+    os.makedirs(dir_path)
+  File "/cluster/apps/nss/python/3.7.4/x86_64/lib64/python3.7/os.py", line 221, in makedirs
+    mkdir(name, mode)
+FileExistsError: [Errno 17] File exists: '/cluster/scratch/guphilip/LM-TFM-mixed/20230918-170036'
+2023-09-18 17:00:37,290 - wandb.wandb_agent - INFO - Cleaning up finished run: e2zknqex
+2023-09-18 17:00:42,794 - wandb.wandb_agent - INFO - Running runs: []
 wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
-wandb: - Waiting for wandb.init()...wandb: \ Waiting for wandb.init()...wandb: Tracking run with wandb version 0.14.0
-wandb: Run data is saved locally in /cluster/scratch/guphilip/wandb/wandb/run-20230703_185933-p5s5xy60
+wandb: WARNING Ignored wandb.init() arg project when running a sweep.
+wandb: wandb version 0.15.10 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.14.0
+wandb: Run data is saved locally in /cluster/scratch/guphilip/wandb/wandb/run-20230918_170057-hamv87xb
 wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run vital-dragon-220
+wandb: Syncing run bright-sweep-20
 wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
-wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/p5s5xy60
-wandb: Network error (TransientError), entering retry loop.
+wandb: 🧹 View sweep at https://wandb.ai/investigating-emergence/investigating-emergence/sweeps/ujfqzcgo
+wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/hamv87xb
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/transformer_xl/pytorch/mem_transformer.py:267: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  attn_mask[:,:,:,None], -float('inf')).type_as(attn_score)
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/env/lib64/python3.7/site-packages/torch/autograd/__init__.py:199: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+wandb: Waiting for W&B process to finish... (success).
+wandb: 
+wandb: Run history:
+wandb: ctl: correct answers depth 1 ▁▃▄▇████████████████████████
+wandb: ctl: correct answers depth 2 ▁▂▁▃▅▇██████████████████████
+wandb: ctl: correct answers depth 3 ▂▂▁▂▂▂▄▅▅▇██████████████████
+wandb: ctl: correct answers depth 4 ▂▁▂▁▁▂▃▃▂▄▅▇▇▇██████████████
+wandb: ctl: correct answers depth 5 ▁▁▁▂▂▂▂▂▂▂▄▄▄▅▆▆▇▇▇█████████
+wandb:                  ctl_batches ▁▁▂▂▂▂▃▃▃▃▄▄▄▄▅▅▅▅▆▆▆▆▇▇▇▇██
+wandb:        ctl_cross_entropy_val ██▇▆▆▅▅▄▄▃▃▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                  ctl_ppl_val ██▇▆▅▅▄▄▃▃▃▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     enwik8_cross_entropy_val ▂▁▁▃▆▅█▄▃▂▂▁▂▂▂▁▃▃▂▁▄▂▂▄▅▃▅▇
+wandb:               enwik8_ppl_val ▁▁▁▂▅▄█▃▂▂▁▁▂▁▁▁▂▂▂▁▃▁▂▃▄▂▄▆
+wandb:                enwik_batches ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:          train_cross_entropy █▇▇▇▇▅▆▅▄▄▄▄▃▃▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                    train_ppl █▇▇▇▇▅▅▅▄▄▄▄▃▃▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb: 
+wandb: Run summary:
+wandb: ctl: correct answers depth 1 1.0
+wandb: ctl: correct answers depth 2 1.0
+wandb: ctl: correct answers depth 3 1.0
+wandb: ctl: correct answers depth 4 1.0
+wandb: ctl: correct answers depth 5 0.98
+wandb:                  ctl_batches 11200
+wandb:        ctl_cross_entropy_val 0.00985
+wandb:                  ctl_ppl_val 1.0099
+wandb:     enwik8_cross_entropy_val 12.72511
+wandb:               enwik8_ppl_val 336082.18515
+wandb:                enwik_batches 0
+wandb:          train_cross_entropy 0.31057
+wandb:                    train_ppl 1.36421
+wandb: 
+wandb: 🚀 View run bright-sweep-20 at: https://wandb.ai/investigating-emergence/investigating-emergence/runs/hamv87xb
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /cluster/scratch/guphilip/wandb/wandb/run-20230918_170057-hamv87xb/logs
+2023-09-18 17:51:58,071 - wandb.wandb_agent - INFO - Cleaning up finished run: hamv87xb
+2023-09-18 17:52:04,346 - wandb.wandb_agent - INFO - Running runs: []
+2023-09-18 18:00:16,406 - wandb.wandb_agent - INFO - Agent received command: run
+2023-09-18 18:00:16,412 - wandb.wandb_agent - INFO - Agent starting run with config:
+	d_model: 1024
+	mixing-rate: 0.31
+	n_layer: 8
+2023-09-18 18:00:16,439 - wandb.wandb_agent - INFO - About to run command: /usr/bin/env python train.py --cuda --data data/mixed/ --dataset mixed --n_head 8 --d_head 16 --d_inner 256 --dropatt 0.0 --dropout 0.1 --optim adam --lr 0.0001 --warmup_step 0 --max_step 1000000000 --tgt_len 128 --eval_tgt_len 128 --ext_len 0 --scheduler constant --mem_len 0 --attn_type 0 --batch_size 32 --eval-interval 100 --pre_lnorm --accumulate-gradients 4 --d_model=1024 --mixing-rate=0.31 --n_layer=8
+2023-09-18 18:00:21,453 - wandb.wandb_agent - INFO - Running runs: ['e2zknqex']
+wandb: Currently logged in as: philipplukas (investigating-emergence). Use `wandb login --relogin` to force relogin
+wandb: WARNING Ignored wandb.init() arg project when running a sweep.
+2023-09-18 18:01:09,689 - wandb.wandb_agent - INFO - Agent received command: exit
+2023-09-18 18:01:09,689 - wandb.wandb_agent - INFO - Received exit command. Killing runs and quitting.
+wandb: Terminating and syncing runs. Press ctrl-c to kill.
+wandb: wandb version 0.15.10 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.14.0
+wandb: Run data is saved locally in /cluster/scratch/guphilip/wandb/wandb/run-20230918_180107-e2zknqex
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run robust-sweep-19
+wandb: ⭐️ View project at https://wandb.ai/investigating-emergence/investigating-emergence
+wandb: 🧹 View sweep at https://wandb.ai/investigating-emergence/investigating-emergence/sweeps/ujfqzcgo
+wandb: 🚀 View run at https://wandb.ai/investigating-emergence/investigating-emergence/runs/e2zknqex
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/transformer_xl/pytorch/mem_transformer.py:267: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  attn_mask[:,:,:,None], -float('inf')).type_as(attn_score)
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/env/lib64/python3.7/site-packages/torch/autograd/__init__.py:199: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+wandb: Waiting for W&B process to finish... (success).
+wandb: - 0.009 MB of 0.110 MB uploaded (0.000 MB deduped)wandb: \ 0.111 MB of 0.111 MB uploaded (0.000 MB deduped)wandb: | 0.111 MB of 0.111 MB uploaded (0.000 MB deduped)wandb: 
+wandb: Run history:
+wandb: ctl: correct answers depth 1 ▁▁▁▂▃▅██████████████████████████████████
+wandb: ctl: correct answers depth 2 ▁▁▁▂▁▃▄▆▇███████████████████████████████
+wandb: ctl: correct answers depth 3 ▁▂▁▁▁▁▂▃▃▄▆▅▇▇▇█████████████████████████
+wandb: ctl: correct answers depth 4 ▁▁▂▁▁▂▂▂▁▂▃▃▄▅▅▇▇▆▇▇████████████████████
+wandb: ctl: correct answers depth 5 ▁▁▁▁▁▁▂▂▂▁▂▂▂▃▃▄▂▄▄▅▆▅▆▆▆▆▇▇▇▇▇▇▇███████
+wandb:                  ctl_batches ▁▁▁▂▂▂▂▂▂▃▃▃▃▃▄▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:        ctl_cross_entropy_val █████▇▆▅▄▄▄▄▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                  ctl_ppl_val █████▇▅▅▄▄▄▃▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     enwik8_cross_entropy_val █▆▅▅▄▅▅▄▄▄▄▄▃▃▄▄▃▄▄▄▄▄▄▄▄▄▄▃▄▁▄▄▅▃▃▅▅▂▃▄
+wandb:               enwik8_ppl_val █▄▃▃▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▂▂▃▂▂▃▃▂▂▂
+wandb:                enwik_batches ▁▁▁▂▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇███
+wandb:          train_cross_entropy █▄▅▃▄▄▃▃▃▃▂▃▁▂▂▂▃▂▂▂▂▃▂▂▂▂▁▁▅▂▂▂▂▂▂▂▂▂▁▂
+wandb:                    train_ppl █▄▅▃▃▃▃▂▂▂▂▂▁▂▂▂▃▂▂▂▂▃▂▂▂▂▁▁▅▂▂▂▂▂▂▂▂▁▁▂
+wandb: 
+wandb: Run summary:
+wandb: ctl: correct answers depth 1 1.0
+wandb: ctl: correct answers depth 2 1.0
+wandb: ctl: correct answers depth 3 1.0
+wandb: ctl: correct answers depth 4 1.0
+wandb: ctl: correct answers depth 5 0.98
+wandb:                  ctl_batches 19857
+wandb:        ctl_cross_entropy_val 0.00922
+wandb:                  ctl_ppl_val 1.00926
+wandb:     enwik8_cross_entropy_val 1.27652
+wandb:               enwik8_ppl_val 3.58415
+wandb:                enwik_batches 44143
+wandb:          train_cross_entropy 0.26214
+wandb:                    train_ppl 1.29971
+wandb: 
+wandb: 🚀 View run robust-sweep-19 at: https://wandb.ai/investigating-emergence/investigating-emergence/runs/e2zknqex
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /cluster/scratch/guphilip/wandb/wandb/run-20230918_180107-e2zknqex/logs
+2023-09-18 22:54:58,429 - wandb.wandb_agent - INFO - Cleaning up finished run: e2zknqex
+2023-09-18 22:54:58,738 - wandb.wandb_agent - INFO - Agent received command: exit
+2023-09-18 22:54:58,738 - wandb.wandb_agent - INFO - Received exit command. Killing runs and quitting.
+wandb: Terminating and syncing runs. Press ctrl-c to kill.
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/transformer_xl/pytorch/mem_transformer.py:267: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  attn_mask[:,:,:,None], -float('inf')).type_as(attn_score)
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/env/lib64/python3.7/site-packages/torch/autograd/__init__.py:199: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+wandb: Waiting for W&B process to finish... (success).
+wandb: 
+wandb: Run history:
+wandb: ctl: correct answers depth 1 ▁▂▃▃████████████████████████████████████
+wandb: ctl: correct answers depth 2 ▂▂▁▂▄▆▇▇████████████████████████████████
+wandb: ctl: correct answers depth 3 ▁▂▁▁▂▂▃▃▃▄▆▇▇█▇▇████████████████████████
+wandb: ctl: correct answers depth 4 ▂▁▁▁▂▁▂▂▂▃▂▄▄▅▃▅▆▆▇▇▇███████████████████
+wandb: ctl: correct answers depth 5 ▁▁▁▁▁▁▂▂▂▁▂▁▁▁▃▂▃▃▄▄▅▄▆▆▆▆▆▇▇▇▇▇▇▇▇█▇███
+wandb:                  ctl_batches ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇███
+wandb:        ctl_cross_entropy_val ███▇▆▆▅▅▄▄▄▃▃▃▃▃▂▂▂▂▂▂▂▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                  ctl_ppl_val ███▇▆▅▅▄▄▄▄▃▃▃▃▂▂▂▂▂▂▂▂▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     enwik8_cross_entropy_val █▆▅▅▅▄▄▄▄▄▆▄▄▃▄▄▅▃▃▃▃▃▄▃▁▄▄▄▃▄▃▃▃▃▂▃▃▂▃▄
+wandb:               enwik8_ppl_val █▅▄▄▄▃▃▃▃▃▅▃▃▂▃▃▄▂▂▂▂▃▃▃▁▃▃▃▂▃▂▂▂▂▂▂▂▂▂▃
+wandb:                enwik_batches ▁▁▁▁▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:          train_cross_entropy █▇▃▅▆▅▅▄▄▄▄▄▅▄▄▃▄▃▃▄▂▅▃▁▃▄▅▃▃▄▅▃▄▃▃▄▁▄▄▃
+wandb:                    train_ppl █▇▃▅▅▅▅▄▄▄▄▄▄▄▃▃▄▃▃▃▂▄▃▁▃▄▄▃▂▄▅▃▄▃▃▄▁▄▃▃
+wandb: 
+wandb: Run summary:
+wandb: ctl: correct answers depth 1 1.0
+wandb: ctl: correct answers depth 2 1.0
+wandb: ctl: correct answers depth 3 1.0
+wandb: ctl: correct answers depth 4 1.0
+wandb: ctl: correct answers depth 5 0.98
+wandb:                  ctl_batches 14495
+wandb:        ctl_cross_entropy_val 0.00921
+wandb:                  ctl_ppl_val 1.00926
+wandb:     enwik8_cross_entropy_val 1.27872
+wandb:               enwik8_ppl_val 3.59202
+wandb:                enwik_batches 130305
+wandb:          train_cross_entropy 0.27549
+wandb:                    train_ppl 1.31718
+wandb: 
+wandb: 🚀 View run classic-sweep-18 at: https://wandb.ai/investigating-emergence/investigating-emergence/runs/f7671obh
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /cluster/scratch/guphilip/wandb/wandb/run-20230918_165932-f7671obh/logs
+2023-09-19 03:38:31,220 - wandb.wandb_agent - INFO - Cleaning up finished run: f7671obh
+2023-09-19 03:38:32,273 - wandb.wandb_agent - INFO - Agent received command: exit
+2023-09-19 03:38:32,273 - wandb.wandb_agent - INFO - Received exit command. Killing runs and quitting.
+wandb: Terminating and syncing runs. Press ctrl-c to kill.
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/investigating_emergence/transformer_xl/pytorch/mem_transformer.py:267: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  attn_mask[:,:,:,None], -float('inf')).type_as(attn_score)
+/cluster/home/guphilip/SemesterProject/InvestigatingEmergence/env/lib64/python3.7/site-packages/torch/autograd/__init__.py:199: UserWarning: masked_fill_ received a mask with dtype torch.uint8, this behavior is now deprecated,please use a mask with dtype torch.bool instead. (Triggered internally at ../aten/src/ATen/native/cuda/Indexing.cu:1435.)
+  allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+wandb: Waiting for W&B process to finish... (success).
+wandb: 
+wandb: Run history:
+wandb: ctl: correct answers depth 1 ▁▁▃▇▇███████████████████████████████████
+wandb: ctl: correct answers depth 2 ▁▁▁▃▅▆▇▇████████████████████████████████
+wandb: ctl: correct answers depth 3 ▁▁▂▁▂▂▃▄▄▆▆▆▆▇██████████████████████████
+wandb: ctl: correct answers depth 4 ▁▁▁▁▂▂▂▃▃▂▃▃▄▆▅▅▆▇▇▇▇▇████████▇█████████
+wandb: ctl: correct answers depth 5 ▂▁▁▁▁▁▁▁▁▂▂▂▂▃▃▂▃▅▄▅▅▆▆▆▆▇▇▇▇▇▇▇▇▇██▇▇▇█
+wandb:                  ctl_batches ▁▁▁▂▂▂▂▂▂▃▃▃▃▃▄▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:        ctl_cross_entropy_val ███▆▅▅▄▄▄▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                  ctl_ppl_val ███▆▅▄▄▄▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:     enwik8_cross_entropy_val ▇▅▅▅▅▅▄▅▄▅▃▄▄▄▄▄▄▃▃▅██▅▄▄▃▅▁▄▂▄▃▅▅▅▄▄▄▄▄
+wandb:               enwik8_ppl_val ▇▄▄▃▄▄▃▃▂▄▂▃▂▃▂▃▃▂▂▃██▃▃▂▂▃▁▃▂▃▂▄▃▄▃▃▃▃▂
+wandb:                enwik_batches ▁▁▁▂▂▂▂▂▂▃▃▃▃▃▃▄▄▄▄▄▅▅▅▅▅▅▆▆▆▆▆▇▇▇▇▇▇███
+wandb:          train_cross_entropy █▃▄▄▃▃▃▃▄▄▄▂▃▂▂▁▅▁▂▂▄▂▃▂▂▁▂▂▂▁▂▂▂▁▂▂▂▁▁▂
+wandb:                    train_ppl █▃▄▄▂▂▃▂▄▄▃▂▃▁▂▁▄▁▂▂▃▂▂▂▂▁▂▂▂▁▂▂▂▁▂▂▂▁▁▂
+wandb: 
+wandb: Run summary:
+wandb: ctl: correct answers depth 1 1.0
+wandb: ctl: correct answers depth 2 1.0
+wandb: ctl: correct answers depth 3 1.0
+wandb: ctl: correct answers depth 4 1.0
+wandb: ctl: correct answers depth 5 0.88
+wandb:                  ctl_batches 54693
+wandb:        ctl_cross_entropy_val 0.01075
+wandb:                  ctl_ppl_val 1.01081
+wandb:     enwik8_cross_entropy_val 1.08566
+wandb:               enwik8_ppl_val 2.9614
+wandb:                enwik_batches 122707
+wandb:          train_cross_entropy 0.67905
+wandb:                    train_ppl 1.97201
+wandb: 
+wandb: 🚀 View run celestial-energy-530 at: https://wandb.ai/investigating-emergence/investigating-emergence/runs/cwvrzyvb
+wandb: Synced 5 W&B file(s), 0 media file(s), 2 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /cluster/scratch/guphilip/wandb/wandb/run-20230918_085601-cwvrzyvb/logs

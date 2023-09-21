@@ -3,11 +3,11 @@ method: grid
 
 parameters:
   mixing-rate:
-    values: [0.1, 0.3, 0.5]
+    values: [0.01, 0.031, 0.1, 0.31, 1.0]
   n_layer:
-    values: [4, 8, 12]
+    values: [8]
   d_model:
-    values: [512]
+    values: [128, 256, 512, 1024]
   
 
 command:
@@ -32,11 +32,11 @@ command:
   - "--optim"
   -   "adam" 
   - "--lr" 
-  -   "1e-04" 
+  -   "1e-06" 
   - "--warmup_step" 
   -   "0"
   - "--max_step"  
-  -   "10000000"
+  -   "1000000000"
   - "--tgt_len" 
   -   "128"
   - "--eval_tgt_len" 
@@ -44,14 +44,16 @@ command:
   - "--ext_len" 
   -   "0"
   - "--scheduler" 
-  -   "constant"
+  -   "inv_sqrt"
   - "--mem_len" 
   -   "0"
   - "--attn_type"
   -   "0"
   - "--batch_size" 
-  -   "128"
+  -   "64"
   - "--eval-interval" 
   -   "100"
   - "--pre_lnorm"
+  - "--accumulate-gradients"
+  -   "2"
   - ${args}
