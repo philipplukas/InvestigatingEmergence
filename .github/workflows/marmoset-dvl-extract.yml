@@ -1,0 +1,95 @@
+name: marmoset-dvl-extract
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/marmoset-dvl-extract.yml'
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download Zenodo archive
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 5 --retry-delay 5 \
+            'https://zenodo.org/records/19916398/files/DynamicVocalLearning.zip?download=1' \
+            -o /tmp/DynamicVocalLearning.zip
+          ls -lh /tmp/DynamicVocalLearning.zip
+          md5sum /tmp/DynamicVocalLearning.zip | tee /tmp/archive_md5.txt
+      - name: Inventory and extract compact analysis assets
+        run: |
+          set -euxo pipefail
+          mkdir -p research/primate_transition/marmoset_dvl_extract/files
+          python - <<'PY'
+          import csv, json, zipfile, os, shutil
+          from pathlib import Path
+
+          zpath = Path('/tmp/DynamicVocalLearning.zip')
+          out = Path('research/primate_transition/marmoset_dvl_extract')
+          extract = out / 'files'
+          extract.mkdir(parents=True, exist_ok=True)
+
+          text_ext = {'.csv','.tsv','.txt','.json','.yaml','.yml','.py','.r','.rmd','.md','.ipynb','.jl','.m','.stan','.toml'}
+          compact_binary = {'.parquet','.feather','.xlsx','.xls','.pkl','.pickle','.npy','.npz','.rds','.rdata','.mat'}
+          max_size = 100 * 1024 * 1024
+          rows=[]
+          selected=[]
+          with zipfile.ZipFile(zpath) as z:
+              for info in z.infolist():
+                  if info.is_dir():
+                      continue
+                  p=Path(info.filename)
+                  ext=p.suffix.lower()
+                  rows.append({
+                      'name': info.filename,
+                      'size_bytes': info.file_size,
+                      'compressed_bytes': info.compress_size,
+                      'extension': ext,
+                  })
+                  if info.file_size <= max_size and (ext in text_ext or ext in compact_binary):
+                      selected.append(info)
+              for info in selected:
+                  target = extract / info.filename
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with z.open(info) as src, open(target,'wb') as dst:
+                      shutil.copyfileobj(src,dst)
+          rows.sort(key=lambda r:r['size_bytes'], reverse=True)
+          with open(out/'archive_manifest.csv','w',newline='') as f:
+              w=csv.DictWriter(f, fieldnames=['name','size_bytes','compressed_bytes','extension'])
+              w.writeheader(); w.writerows(rows)
+          summary={
+              'archive_files':len(rows),
+              'selected_compact_files':len(selected),
+              'selected_bytes':sum(i.file_size for i in selected),
+              'largest_files':rows[:30],
+              'selected_names':[i.filename for i in selected],
+          }
+          (out/'extract_summary.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2)[:30000])
+          PY
+          du -sh research/primate_transition/marmoset_dvl_extract || true
+          find research/primate_transition/marmoset_dvl_extract/files -type f -printf '%s %p\n' | sort -n | tail -100
+      - name: Print likely data/code files
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          m=pd.read_csv('research/primate_transition/marmoset_dvl_extract/archive_manifest.csv')
+          keys='distance|converg|trill|model|feature|pair|learn|data|result|csv|xlsx|rds|npy|npz'
+          q=m[m['name'].str.contains(keys,case=False,regex=True)]
+          print(q[['name','size_bytes']].to_string(index=False,max_rows=300))
+          PY
+      - name: Upload compact extraction
+        uses: actions/upload-artifact@v4
+        with:
+          name: marmoset-dvl-compact-extract
+          path: research/primate_transition/marmoset_dvl_extract/
+          if-no-files-found: error
+          compression-level: 6
