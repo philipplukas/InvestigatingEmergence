@@ -1,0 +1,87 @@
+name: chimp-semantic-structure-coupling-inventory
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths: ['.github/workflows/chimp-semantic-structure-coupling-inventory.yml']
+  workflow_dispatch:
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install pandas openpyxl python-docx requests
+      - name: Download and inventory
+        run: |
+          python - <<'PY'
+          import requests, pathlib, pandas as pd, json, re
+          from docx import Document
+          out=pathlib.Path('research/primate_transition/chimp_coupling_inventory'); out.mkdir(parents=True,exist_ok=True)
+          urls={
+            'seq_xlsx':'https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM5_ESM.xlsx',
+            'seq_docx':'https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM4_ESM.docx',
+            'meaning_csv':'https://raw.githubusercontent.com/tozbu/Chimpanzee_bigram_meaning/main/calldata.csv'
+          }
+          paths={}
+          for k,u in urls.items():
+            r=requests.get(u,timeout=120); r.raise_for_status()
+            ext={'seq_xlsx':'.xlsx','seq_docx':'.docx','meaning_csv':'.csv'}[k]
+            p=out/(k+ext); p.write_bytes(r.content); paths[k]=p
+            print(k,len(r.content))
+
+          meaning=pd.read_csv(paths['meaning_csv'])
+          semantic_bigrams=sorted(meaning.loc[meaning['combi.length']==2,'call.name'].dropna().astype(str).unique())
+          semantic_callers=sorted(meaning['caller'].dropna().astype(str).unique())
+          pd.DataFrame({'semantic_bigram':semantic_bigrams}).to_csv(out/'semantic_bigrams_2025.csv',index=False)
+          pd.DataFrame({'caller':semantic_callers}).to_csv(out/'semantic_callers_2025.csv',index=False)
+
+          xl=pd.ExcelFile(paths['seq_xlsx'])
+          inv=[]
+          string_dump=[]
+          for s in xl.sheet_names:
+            df=pd.read_excel(paths['seq_xlsx'],sheet_name=s,header=None)
+            df.to_csv(out/f'xlsx_sheet_{re.sub(r"[^A-Za-z0-9]+","_",s)}.csv',index=False,header=False)
+            inv.append({'sheet':s,'rows':df.shape[0],'cols':df.shape[1]})
+            for i,row in df.iterrows():
+              for j,v in row.items():
+                if isinstance(v,str) and v.strip():
+                  string_dump.append({'sheet':s,'row':int(i),'col':int(j),'value':v.strip()})
+          pd.DataFrame(inv).to_csv(out/'xlsx_inventory.csv',index=False)
+          sd=pd.DataFrame(string_dump); sd.to_csv(out/'xlsx_string_cells.csv',index=False)
+
+          doc=Document(paths['seq_docx'])
+          paras=[p.text for p in doc.paragraphs if p.text.strip()]
+          (out/'supp_data1_text.txt').write_text('\n'.join(paras))
+          tables=[]
+          for ti,t in enumerate(doc.tables):
+            for ri,row in enumerate(t.rows):
+              tables.append({'table':ti,'row':ri,'cells':' | '.join(c.text.strip() for c in row.cells)})
+          pd.DataFrame(tables).to_csv(out/'docx_tables.csv',index=False)
+
+          # Candidate sequence-like strings from both supplementary files.
+          pat=re.compile(r'\b(?:GR|PG|HO|BK|PH|PB|PN|SC|PS|WH|NV|PR)(?:[_\-+ ]+(?:GR|PG|HO|BK|PH|PB|PN|SC|PS|WH|NV|PR)){1,9}\b',re.I)
+          found=[]
+          for r in string_dump:
+            for m in pat.finditer(r['value']): found.append({'source':'xlsx','location':f"{r['sheet']}:{r['row']}:{r['col']}",'sequence':m.group(0)})
+          for i,p in enumerate(paras):
+            for m in pat.finditer(p): found.append({'source':'docx','location':f'paragraph:{i}','sequence':m.group(0)})
+          for r in tables:
+            for m in pat.finditer(r['cells']): found.append({'source':'docx_table','location':f"{r['table']}:{r['row']}",'sequence':m.group(0)})
+          pd.DataFrame(found).to_csv(out/'candidate_sequence_strings.csv',index=False)
+
+          summary={'semantic_rows':len(meaning),'semantic_callers':len(semantic_callers),'semantic_bigrams':semantic_bigrams,'xlsx_sheets':xl.sheet_names,'candidate_sequence_strings':len(found)}
+          (out/'inventory_summary.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          print(pd.DataFrame(inv).to_string(index=False))
+          print(sd.head(80).to_string(index=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimp-semantic-structure-coupling-inventory
+          path: research/primate_transition/chimp_coupling_inventory/
+          if-no-files-found: error
