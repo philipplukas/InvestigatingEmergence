@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install analysis dependencies
+        run: python -m pip install --upgrade pandas openpyxl numpy scipy
       - name: Download Zenodo archive
         run: |
           set -euxo pipefail
@@ -29,7 +31,7 @@ jobs:
           set -euxo pipefail
           mkdir -p research/primate_transition/marmoset_dvl_extract/files
           python - <<'PY'
-          import csv, json, zipfile, os, shutil
+          import csv, json, zipfile, shutil
           from pathlib import Path
 
           zpath = Path('/tmp/DynamicVocalLearning.zip')
@@ -40,20 +42,14 @@ jobs:
           text_ext = {'.csv','.tsv','.txt','.json','.yaml','.yml','.py','.r','.rmd','.md','.ipynb','.jl','.m','.stan','.toml'}
           compact_binary = {'.parquet','.feather','.xlsx','.xls','.pkl','.pickle','.npy','.npz','.rds','.rdata','.mat'}
           max_size = 100 * 1024 * 1024
-          rows=[]
-          selected=[]
+          rows=[]; selected=[]
           with zipfile.ZipFile(zpath) as z:
               for info in z.infolist():
                   if info.is_dir():
                       continue
-                  p=Path(info.filename)
-                  ext=p.suffix.lower()
-                  rows.append({
-                      'name': info.filename,
-                      'size_bytes': info.file_size,
-                      'compressed_bytes': info.compress_size,
-                      'extension': ext,
-                  })
+                  p=Path(info.filename); ext=p.suffix.lower()
+                  rows.append({'name':info.filename,'size_bytes':info.file_size,'compressed_bytes':info.compress_size,'extension':ext})
+                  # Keep compact analysis assets; skip the two huge common-table workbooks.
                   if info.file_size <= max_size and (ext in text_ext or ext in compact_binary):
                       selected.append(info)
               for info in selected:
@@ -63,20 +59,48 @@ jobs:
                       shutil.copyfileobj(src,dst)
           rows.sort(key=lambda r:r['size_bytes'], reverse=True)
           with open(out/'archive_manifest.csv','w',newline='') as f:
-              w=csv.DictWriter(f, fieldnames=['name','size_bytes','compressed_bytes','extension'])
-              w.writeheader(); w.writerows(rows)
-          summary={
-              'archive_files':len(rows),
-              'selected_compact_files':len(selected),
-              'selected_bytes':sum(i.file_size for i in selected),
-              'largest_files':rows[:30],
-              'selected_names':[i.filename for i in selected],
-          }
+              w=csv.DictWriter(f,fieldnames=['name','size_bytes','compressed_bytes','extension']); w.writeheader(); w.writerows(rows)
+          summary={'archive_files':len(rows),'selected_compact_files':len(selected),'selected_bytes':sum(i.file_size for i in selected),'largest_files':rows[:30],'selected_names':[i.filename for i in selected]}
           (out/'extract_summary.json').write_text(json.dumps(summary,indent=2))
           print(json.dumps(summary,indent=2)[:30000])
           PY
           du -sh research/primate_transition/marmoset_dvl_extract || true
-          find research/primate_transition/marmoset_dvl_extract/files -type f -printf '%s %p\n' | sort -n | tail -100
+      - name: Convert precomputed analysis workbooks to CSV
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          import pandas as pd
+
+          root=Path('research/primate_transition/marmoset_dvl_extract/files')
+          out=Path('research/primate_transition/marmoset_dvl_extract/converted_csv')
+          out.mkdir(parents=True,exist_ok=True)
+          inventory=[]
+          candidates=[]
+          for p in root.rglob('*.xlsx'):
+              s=str(p).lower()
+              if ('vocal distances' in s or 'vocal synchrony' in s) and not p.name.startswith('~$') and '/._' not in s:
+                  candidates.append(p)
+          for p in sorted(candidates):
+              try:
+                  xls=pd.ExcelFile(p)
+                  rec={'file':str(p.relative_to(root)),'sheets':[]}
+                  for sheet in xls.sheet_names:
+                      try:
+                          df=pd.read_excel(p,sheet_name=sheet)
+                          safe=re.sub(r'[^A-Za-z0-9_.-]+','_',str(p.relative_to(root)).replace('/','__')+'__'+sheet)
+                          csv_path=out/(safe+'.csv')
+                          df.to_csv(csv_path,index=False)
+                          rec['sheets'].append({'sheet':sheet,'rows':int(len(df)),'cols':int(len(df.columns)),'columns':[str(c) for c in df.columns],'csv':csv_path.name,'head':df.head(5).astype(object).where(pd.notna(df),None).to_dict(orient='records')})
+                      except Exception as e:
+                          rec['sheets'].append({'sheet':sheet,'error':repr(e)})
+                  inventory.append(rec)
+              except Exception as e:
+                  inventory.append({'file':str(p.relative_to(root)),'error':repr(e)})
+          (Path('research/primate_transition/marmoset_dvl_extract')/'workbook_inventory.json').write_text(json.dumps(inventory,indent=2,default=str))
+          print(json.dumps(inventory,indent=2,default=str)[:60000])
+          print('converted_csv_files',len(list(out.glob('*.csv'))))
+          PY
       - name: Print likely data/code files
         run: |
           python - <<'PY'
@@ -87,6 +111,7 @@ jobs:
           print(q[['name','size_bytes']].to_string(index=False,max_rows=300))
           PY
       - name: Upload compact extraction
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: marmoset-dvl-compact-extract
