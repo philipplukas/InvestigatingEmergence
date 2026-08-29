@@ -1,0 +1,47 @@
+name: chimp-gamma-embed-public-data
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths: ['.github/workflows/chimp-gamma-embed-public-data.yml']
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install analysis dependencies
+        run: pip install pandas openpyxl requests
+      - name: Download Figshare 22214188 and inspect
+        run: |
+          mkdir -p artifacts/figshare_22214188
+          python - <<'PY'
+          import json, pathlib, requests, pandas as pd, zipfile
+          out=pathlib.Path('artifacts/figshare_22214188')
+          meta=requests.get('https://api.figshare.com/v2/articles/22214188',timeout=60).json()
+          (out/'metadata.json').write_text(json.dumps(meta,indent=2))
+          print('TITLE',meta.get('title'))
+          for f in meta.get('files',[]):
+              print('FILE',f['name'],f['size'],f['download_url'])
+              p=out/f['name']
+              r=requests.get(f['download_url'],timeout=120); r.raise_for_status(); p.write_bytes(r.content)
+              try:
+                  if p.suffix.lower() in ['.xlsx','.xls']:
+                      x=pd.ExcelFile(p); print('SHEETS',p.name,x.sheet_names)
+                      for sh in x.sheet_names:
+                          d=pd.read_excel(p,sheet_name=sh)
+                          print('SHEET',sh,'SHAPE',d.shape,'COLS',list(d.columns))
+                          print(d.head(5).to_string(index=False))
+                  elif p.suffix.lower()=='.csv':
+                      d=pd.read_csv(p); print('CSV',p.name,d.shape,list(d.columns)); print(d.head().to_string(index=False))
+              except Exception as e: print('INSPECT_ERROR',p.name,repr(e))
+          PY
+      - name: Upload public data snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: chimp-gamma-embed-public-data
+          path: artifacts/figshare_22214188
+          retention-days: 14
