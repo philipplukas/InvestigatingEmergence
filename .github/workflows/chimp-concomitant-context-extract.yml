@@ -1,0 +1,83 @@
+name: chimp-concomitant-context-extract
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/chimp-concomitant-context-extract.yml'
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -q pandas openpyxl pyreadr requests
+      - name: Download Figshare record and inspect all tabular files
+        run: |
+          python - <<'PY'
+          import requests, json, re, zipfile, shutil
+          from pathlib import Path
+          import pandas as pd
+          out=Path('research/primate_transition/chimp_concomitant_context_extract')
+          raw=out/'raw'; conv=out/'converted_csv'
+          raw.mkdir(parents=True,exist_ok=True); conv.mkdir(parents=True,exist_ok=True)
+          meta=requests.get('https://api.figshare.com/v2/articles/22214188',timeout=60)
+          meta.raise_for_status(); meta=meta.json()
+          (out/'figshare_meta.json').write_text(json.dumps(meta,indent=2))
+          inv=[]
+          for f in meta.get('files',[]):
+              name=f['name']; url=f['download_url']; dest=raw/name
+              r=requests.get(url,timeout=180); r.raise_for_status(); dest.write_bytes(r.content)
+              inv.append({'name':name,'size':dest.stat().st_size,'id':f.get('id'),'download_url':url})
+              ext=dest.suffix.lower(); safe=re.sub(r'[^A-Za-z0-9._-]+','_',name)
+              try:
+                  if ext=='.csv': pd.read_csv(dest).to_csv(conv/f'{safe}.csv',index=False)
+                  elif ext in {'.xlsx','.xls'}:
+                      xl=pd.ExcelFile(dest)
+                      for sh in xl.sheet_names:
+                          ss=re.sub(r'[^A-Za-z0-9._-]+','_',sh)
+                          pd.read_excel(dest,sheet_name=sh).to_csv(conv/f'{safe}__{ss}.csv',index=False)
+                  elif ext=='.rds':
+                      import pyreadr
+                      for k,df in pyreadr.read_r(dest).items():
+                          if hasattr(df,'to_csv'): df.to_csv(conv/f'{safe}__{k or "object"}.csv',index=False)
+                  elif ext=='.zip':
+                      zd=raw/(dest.stem+'_unzipped'); zd.mkdir(exist_ok=True)
+                      with zipfile.ZipFile(dest) as z: z.extractall(zd)
+                      for p in zd.rglob('*'):
+                          if p.is_file() and p.suffix.lower()=='.csv':
+                              pd.read_csv(p).to_csv(conv/f'{safe}__{p.name}.csv',index=False)
+                          elif p.is_file() and p.suffix.lower() in {'.xlsx','.xls'}:
+                              xl=pd.ExcelFile(p)
+                              for sh in xl.sheet_names:
+                                  ss=re.sub(r'[^A-Za-z0-9._-]+','_',sh)
+                                  pd.read_excel(p,sheet_name=sh).to_csv(conv/f'{safe}__{p.name}__{ss}.csv',index=False)
+              except Exception as e:
+                  (conv/f'{safe}.conversion_error.txt').write_text(repr(e))
+          pd.DataFrame(inv).to_csv(out/'figshare_inventory.csv',index=False)
+          schemas=[]
+          for p in sorted(conv.glob('*.csv')):
+              try:
+                  df=pd.read_csv(p)
+                  schemas.append({'file':p.name,'rows':len(df),'columns':' | '.join(map(str,df.columns))})
+                  print('\n###',p.name,'shape',df.shape)
+                  print('COLUMNS',list(df.columns))
+                  print(df.head(6).to_string(index=False))
+              except Exception as e: print('ERR',p,e)
+          pd.DataFrame(schemas).to_csv(out/'schema_inventory.csv',index=False)
+          print('\nFILES')
+          print(pd.DataFrame(inv).to_string(index=False))
+          PY
+      - name: Upload extract
+        uses: actions/upload-artifact@v4
+        with:
+          name: chimp-concomitant-context-extract
+          path: research/primate_transition/chimp_concomitant_context_extract/
+          if-no-files-found: error
+          compression-level: 6
