@@ -1,0 +1,92 @@
+name: chimp-ontogeny-context-schema-audit
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/chimp-ontogeny-context-schema-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -q pandas openpyxl xlrd pyreadr requests
+      - name: Download Figshare 19336853 and inspect schemas
+        run: |
+          python - <<'PY'
+          import requests, json, re, zipfile
+          from pathlib import Path
+          import pandas as pd
+          out=Path('research/primate_transition/chimp_ontogeny_context_audit')
+          raw=out/'raw'; conv=out/'converted_csv'
+          raw.mkdir(parents=True,exist_ok=True); conv.mkdir(parents=True,exist_ok=True)
+          meta=requests.get('https://api.figshare.com/v2/articles/19336853',timeout=60); meta.raise_for_status(); meta=meta.json()
+          (out/'figshare_meta.json').write_text(json.dumps(meta,indent=2))
+          inv=[]; schemas=[]
+          def emit_df(df,label):
+              safe=re.sub(r'[^A-Za-z0-9._-]+','_',label)
+              p=conv/f'{safe}.csv'; df.to_csv(p,index=False)
+              cols=[str(c) for c in df.columns]
+              low=' '.join(c.lower() for c in cols)
+              schemas.append({'file':p.name,'rows':len(df),'columns':' | '.join(cols),
+                'has_sequence_like':any(k in low for k in ['sequence','utterance','call','vocal','unit']),
+                'has_context_like':any(k in low for k in ['context','event','activity','behavior','behaviour']),
+                'has_caller_like':any(k in low for k in ['caller','individual','subject','chimp']),
+                'has_time_join_like':any(k in low for k in ['date','day','time','recording','file','id','season'])})
+              print('\n###',label,df.shape); print(cols); print(df.head(8).to_string(index=False))
+          for f in meta.get('files',[]):
+              name=f['name']; dest=raw/name
+              r=requests.get(f['download_url'],timeout=180); r.raise_for_status(); dest.write_bytes(r.content)
+              inv.append({'name':name,'id':f.get('id'),'size':dest.stat().st_size,'url':f['download_url']})
+              ext=dest.suffix.lower()
+              try:
+                  if ext in ['.csv','.txt']:
+                      for sep in [',',';','\t']:
+                          try:
+                              df=pd.read_csv(dest,sep=sep)
+                              if df.shape[1]>1: emit_df(df,name); break
+                          except: pass
+                  elif ext in ['.xlsx','.xls']:
+                      xl=pd.ExcelFile(dest)
+                      for sh in xl.sheet_names: emit_df(pd.read_excel(dest,sheet_name=sh),f'{name}__{sh}')
+                  elif ext=='.rds':
+                      import pyreadr
+                      for k,df in pyreadr.read_r(dest).items(): emit_df(df,f'{name}__{k or "object"}')
+                  elif ext=='.zip':
+                      zd=raw/(dest.stem+'_unzipped'); zd.mkdir(exist_ok=True)
+                      with zipfile.ZipFile(dest) as z: z.extractall(zd)
+                      for p in zd.rglob('*'):
+                          if not p.is_file(): continue
+                          if p.suffix.lower() in ['.csv','.txt']:
+                              for sep in [',',';','\t']:
+                                  try:
+                                      df=pd.read_csv(p,sep=sep)
+                                      if df.shape[1]>1: emit_df(df,f'{name}__{p.name}'); break
+                                  except: pass
+                          elif p.suffix.lower() in ['.xlsx','.xls']:
+                              xl=pd.ExcelFile(p)
+                              for sh in xl.sheet_names: emit_df(pd.read_excel(p,sheet_name=sh),f'{name}__{p.name}__{sh}')
+              except Exception as e:
+                  (conv/(re.sub(r'[^A-Za-z0-9._-]+','_',name)+'.error.txt')).write_text(repr(e))
+          pd.DataFrame(inv).to_csv(out/'figshare_inventory.csv',index=False)
+          s=pd.DataFrame(schemas); s.to_csv(out/'schema_inventory.csv',index=False)
+          candidates=s[s.has_sequence_like & s.has_context_like] if len(s) else s
+          candidates.to_csv(out/'sequence_context_candidate_tables.csv',index=False)
+          verdict={'article_id':19336853,'n_files':len(inv),'n_converted_tables':len(s),'n_tables_with_sequence_and_context_like_columns':len(candidates),'candidate_files':candidates.file.tolist() if len(candidates) else []}
+          (out/'schema_verdict.json').write_text(json.dumps(verdict,indent=2))
+          print('\nINVENTORY'); print(pd.DataFrame(inv).to_string(index=False)); print('\nCANDIDATES'); print(candidates.to_string(index=False) if len(candidates) else 'NONE'); print(verdict)
+          PY
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: chimp-ontogeny-context-schema-audit
+          path: research/primate_transition/chimp_ontogeny_context_audit/
+          if-no-files-found: error
+          compression-level: 6
