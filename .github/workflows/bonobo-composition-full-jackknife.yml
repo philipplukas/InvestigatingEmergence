@@ -1,0 +1,131 @@
+name: bonobo-composition-full-jackknife
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/bonobo-composition-full-jackknife.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::FactoMineR
+      - name: Download public bonobo xdata
+        run: |
+          python - <<'PY'
+          import requests, pathlib
+          meta=requests.get('https://api.figshare.com/v2/articles/26217803',timeout=60).json()
+          f=next(x for x in meta['files'] if x['name']=='xdata.txt')
+          r=requests.get(f['download_url'],timeout=120); r.raise_for_status()
+          pathlib.Path('/tmp/xdata.txt').write_bytes(r.content)
+          PY
+      - name: Full leave-one-caller MCA refit
+        shell: Rscript {0}
+        run: |
+          suppressPackageStartupMessages(library(FactoMineR))
+          dir.create('research/primate_transition/bonobo_full_jackknife',recursive=TRUE,showWarnings=FALSE)
+          out <- 'research/primate_transition/bonobo_full_jackknife'
+          xraw <- read.delim('/tmp/xdata.txt',header=TRUE,stringsAsFactors=TRUE)
+          xraw <- xraw[,-1]
+          callers <- sort(unique(as.character(xraw$Caller)))
+          singles <- c('gr','hh','lh','pe','py','wi','ye')
+          cand <- data.frame(combination=c('hh-lh','pe-wi','py-hh','ye-gr'),
+                             A=c('hh','pe','py','ye'), B=c('lh','wi','hh','gr'),
+                             stringsAsFactors=FALSE)
+
+          bary <- function(d, eig) {
+            w <- d$WEIGHT
+            sapply(1:5,function(j) sum(w*d[[paste0('D',j)]])/sum(w)/sqrt(eig[j]))
+          }
+
+          chance_vals <- function(x, res, nsplit=500, seed=1) {
+            dim <- as.data.frame(res$ind$coord[,1:5,drop=FALSE]); names(dim)<-paste0('D',1:5)
+            dbase <- data.frame(COMB=x$Combination,WEIGHT=res$call$row.w,dim)
+            eig <- res$eig[1:5,1]
+            ans <- numeric(length(singles)); names(ans)<-singles
+            for (si in seq_along(singles)) {
+              level <- singles[si]
+              d <- dbase[dbase$COMB==level,,drop=FALSE]
+              n <- nrow(d)
+              vals <- numeric(nsplit)
+              set.seed(seed + si*1009)
+              for (k in seq_len(nsplit)) {
+                n1 <- round(n/2)
+                idx <- sample(seq_len(n),n1,replace=FALSE)
+                d1 <- d[idx,,drop=FALSE]; d2 <- d[-idx,,drop=FALSE]
+                vals[k] <- sqrt(sum((bary(d1,eig)-bary(d2,eig))^2))
+              }
+              ans[level] <- mean(vals)
+            }
+            ans
+          }
+
+          fit_one <- function(x, label, seed) {
+            x <- droplevels(x)
+            res <- MCA(x,quanti.sup=c(5,6),quali.sup=c(1:4),ncp=5,graph=FALSE)
+            C <- as.matrix(res$quali.sup$coord[,1:5,drop=FALSE])
+            refs <- chance_vals(x,res,nsplit=500,seed=seed)
+            rows <- list()
+            for (ii in seq_len(nrow(cand))) {
+              r<-cand[ii,]; ab<-r$combination; a<-r$A; b<-r$B
+              if (!all(c(ab,a,b)%in%rownames(C))) next
+              distf<-function(u,v)sqrt(sum((C[u,]-C[v,])^2))
+              ds<-sapply(singles,function(s) if(s%in%rownames(C))distf(ab,s) else NA_real_)
+              thr<-mean(c(refs[a],refs[b]))
+              rows[[ii]]<-data.frame(
+                removed_caller=label, combination=ab,
+                n_rows=nrow(x), n_ab=sum(x$Combination==ab), n_callers_ab=length(unique(as.character(x$Caller[x$Combination==ab]))),
+                chance_A=refs[a], chance_B=refs[b], corrected_threshold=thr,
+                constituent_distinct_margin=distf(a,b)-thr,
+                combo_vs_A_margin=distf(ab,a)-refs[a], combo_vs_B_margin=distf(ab,b)-refs[b],
+                derive_margin=mean(ds[!(names(ds)%in%c(a,b))],na.rm=TRUE)-mean(ds[c(a,b)],na.rm=TRUE),
+                nontrivial_margin=sqrt(sum((C[a,]+C[b,]-C[ab,])^2))-thr,
+                stringsAsFactors=FALSE)
+            }
+            do.call(rbind,rows)
+          }
+
+          # full data reference with stable 500-split thresholds
+          full <- fit_one(xraw,'NONE_FULL_DATA',20260829)
+          allrows <- list(full)
+          for (i in seq_along(callers)) {
+            cc<-callers[i]
+            message('Refit ',i,'/',length(callers),' removing ',cc)
+            xs<-xraw[as.character(xraw$Caller)!=cc,,drop=FALSE]
+            allrows[[length(allrows)+1]]<-fit_one(xs,cc,20260829+i*10000)
+          }
+          tab<-do.call(rbind,allrows)
+          write.csv(tab,file.path(out,'full_refit_leave_one_caller.csv'),row.names=FALSE)
+
+          jk<-tab[tab$removed_caller!='NONE_FULL_DATA',]
+          metrics<-c('constituent_distinct_margin','combo_vs_A_margin','combo_vs_B_margin','derive_margin','nontrivial_margin')
+          summ<-do.call(rbind,lapply(split(jk,jk$combination),function(d){
+            rr<-data.frame(combination=d$combination[1])
+            for(m in metrics){
+              v<-d[[m]]
+              rr[[paste0(m,'_min')]]<-min(v)
+              rr[[paste0(m,'_median')]]<-median(v)
+              rr[[paste0(m,'_max')]]<-max(v)
+              rr[[paste0(m,'_positive_fraction')]]<-mean(v>0)
+            }
+            rr
+          }))
+          write.csv(summ,file.path(out,'full_refit_leave_one_caller_summary.csv'),row.names=FALSE)
+          write.csv(full,file.path(out,'full_data_stabilized_threshold_reference.csv'),row.names=FALSE)
+          print(full)
+          print(summ[,c('combination','nontrivial_margin_min','nontrivial_margin_median','nontrivial_margin_max','nontrivial_margin_positive_fraction')])
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bonobo-composition-full-jackknife
+          path: research/primate_transition/bonobo_full_jackknife/
+          if-no-files-found: error
