@@ -24,6 +24,8 @@ jobs:
         run: python research/primate_transition/joint_landscape_cv_fast.py
       - name: Run cross-species landscape analysis
         run: python research/primate_transition/cross_species_landscape.py
+      - name: Audit published human subsets
+        run: python research/primate_transition/audit_published_subset.py
       - name: Print joint landscape results
         run: |
           echo '=== JOINT MODEL COMPARISON ==='
