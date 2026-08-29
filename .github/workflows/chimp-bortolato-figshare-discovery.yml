@@ -1,0 +1,53 @@
+name: chimp-bortolato-figshare-discovery
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/chimp-bortolato-figshare-discovery.yml'
+  workflow_dispatch:
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -q pandas requests
+      - name: Search Figshare API broadly
+        run: |
+          python - <<'PY'
+          import requests,json,re
+          from pathlib import Path
+          import pandas as pd
+          out=Path('research/primate_transition/chimp_bortolato_figshare_discovery'); out.mkdir(parents=True,exist_ok=True)
+          S=requests.Session(); S.headers.update({'User-Agent':'chimp-context-discovery/1.0'})
+          queries=['Bortolato chimpanzee','Tatiana Bortolato','chimpanzee vocal sequences','chimpanzee vocal communication Tai','chimpanzee trigram','chimpanzee vocal ontogeny']
+          found={}
+          for q in queries:
+              r=S.post('https://api.figshare.com/v2/articles/search',json={'search_for':q,'limit':100,'order':'published_date','order_direction':'desc'},timeout=60)
+              r.raise_for_status()
+              for a in r.json(): found[a['id']]=a
+          rows=[]; files=[]
+          for aid,a in sorted(found.items()):
+              m=S.get(f'https://api.figshare.com/v2/articles/{aid}',timeout=60); m.raise_for_status(); m=m.json()
+              authors='; '.join(x.get('full_name','') for x in m.get('authors',[]))
+              relevant=('bortolato' in authors.lower()) or ('chimp' in (m.get('title','')+' '+m.get('description','')).lower())
+              if not relevant: continue
+              rows.append({'article_id':aid,'title':m.get('title'),'published_date':m.get('published_date'),'doi':m.get('doi'),'authors':authors,'description':re.sub('<[^>]+>',' ',m.get('description',''))[:1000]})
+              for f in m.get('files',[]): files.append({'article_id':aid,'article_title':m.get('title'),'file_id':f.get('id'),'file_name':f.get('name'),'size':f.get('size'),'download_url':f.get('download_url')})
+          pd.DataFrame(rows).to_csv(out/'figshare_articles.csv',index=False)
+          pd.DataFrame(files).to_csv(out/'figshare_files.csv',index=False)
+          (out/'raw_search_results.json').write_text(json.dumps(list(found.values()),indent=2))
+          print('ARTICLES'); print(pd.DataFrame(rows).to_string(index=False)); print('\nFILES'); print(pd.DataFrame(files).to_string(index=False))
+          PY
+      - name: Upload discovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: chimp-bortolato-figshare-discovery
+          path: research/primate_transition/chimp_bortolato_figshare_discovery/
+          if-no-files-found: error
