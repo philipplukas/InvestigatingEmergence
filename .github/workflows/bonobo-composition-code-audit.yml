@@ -1,0 +1,84 @@
+name: bonobo-composition-code-audit
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/bonobo-composition-code-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::FactoMineR
+      - name: Download xdata
+        run: |
+          python - <<'PY'
+          import requests, pathlib
+          meta=requests.get('https://api.figshare.com/v2/articles/26217803',timeout=60).json()
+          f=next(x for x in meta['files'] if x['name']=='xdata.txt')
+          b=requests.get(f['download_url'],timeout=120).content
+          pathlib.Path('/tmp/xdata.txt').write_bytes(b)
+          PY
+      - name: Audit published nontriviality calculation
+        shell: Rscript {0}
+        run: |
+          suppressPackageStartupMessages(library(FactoMineR))
+          dir.create('research/primate_transition/bonobo_code_audit',recursive=TRUE,showWarnings=FALSE)
+          o<-'research/primate_transition/bonobo_code_audit'
+          xdata<-read.delim('/tmp/xdata.txt',header=TRUE,stringsAsFactors=TRUE)
+          xdata<-xdata[,-1]
+          res.mca<-MCA(xdata,quanti.sup=c(5,6),quali.sup=c(1:4),ncp=5,graph=FALSE)
+          coord<-as.data.frame(res.mca$quali.sup$coord[1:26,])
+          DIM<-as.data.frame(res.mca$ind$coord[,1:5]); names(DIM)<-paste0('D',1:5)
+          WEIGHT<-res.mca$call$row.w; COMB<-xdata$Combination
+          Comb_levels<-c('gr','hh','lh','pe','py','wi','ye')
+          refs<-numeric(7); names(refs)<-Comb_levels
+          for(level in Comb_levels){
+            d<-data.frame(COMB=COMB,WEIGHT=WEIGHT,DIM)[COMB==level,]
+            vals<-numeric(15); set.seed(123)
+            for(k in 1:15){
+              n<-nrow(d); v<-c(rep(TRUE,round(n/2)),rep(FALSE,n-round(n/2))); select<-sample(v)
+              d1<-d[select,];d2<-d[!select,]
+              b1<-sapply(1:5,function(i)sum(d1$WEIGHT*d1[[i+2]])/sum(d1$WEIGHT)/sqrt(res.mca$eig[i,1]))
+              b2<-sapply(1:5,function(i)sum(d2$WEIGHT*d2[[i+2]])/sum(d2$WEIGHT)/sqrt(res.mca$eig[i,1]))
+              vals[k]<-sqrt(sum((b1-b2)^2))
+            }
+            refs[level]<-mean(vals)
+          }
+          write.csv(data.frame(call=names(refs),chance=refs),file.path(o,'chance_values_exact15.csv'),row.names=FALSE)
+          defs<-data.frame(combination=c('hh-lh','pe-wi','py-hh','ye-gr'),first=c('hh','wi','hh','ye'),second=c('lh','pe','py','gr'),reported=c(.42,.36,.21,-.02),stringsAsFactors=FALSE)
+          rows<-list()
+          for(i in 1:nrow(defs)){
+            r<-defs[i,]; AB<-r$combination
+            # constituent A+B vector uses true pair, even where published line lists threshold arguments in reverse
+            parts<-strsplit(AB,'-',fixed=TRUE)[[1]]
+            if(AB=='py-hh') parts<-c('py','hh')
+            pooled<-coord[parts[1],]+coord[parts[2],]
+            real<-coord[AB,]
+            rawdist<-sqrt(sum((pooled-real)^2))
+            f<-r$first;s<-r$second
+            literal_expr<-rawdist-mean(refs[f],refs[s])
+            literal_equiv<-rawdist-refs[f]
+            intended<-rawdist-mean(c(refs[f],refs[s]))
+            rows[[i]]<-data.frame(combination=AB,raw_additive_distance=rawdist,chance_first=refs[f],chance_second=refs[s],
+              literal_R_expression=literal_expr,literal_first_only=literal_equiv,intended_mean=intended,reported=r$reported,
+              abs_error_literal=abs(literal_expr-r$reported),abs_error_intended=abs(intended-r$reported))
+          }
+          audit<-do.call(rbind,rows)
+          write.csv(audit,file.path(o,'literal_vs_intended_nontriviality.csv'),row.names=FALSE)
+          print(refs);print(audit)
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: bonobo-composition-code-audit
+          path: research/primate_transition/bonobo_code_audit/
+          if-no-files-found: error
