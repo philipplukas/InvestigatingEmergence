@@ -26,22 +26,24 @@ jobs:
         run: python research/primate_transition/cross_species_landscape.py
       - name: Audit published human subsets
         run: python research/primate_transition/audit_published_subset.py
-      - name: Print joint landscape results
+      - name: Run published two-coordinate test
+        run: python research/primate_transition/published_two_coordinate.py
+      - name: Print decisive results
         run: |
-          echo '=== JOINT MODEL COMPARISON ==='
-          cat research/primate_transition/out_joint/joint_model_comparison.csv
-          echo '=== BLOCKED CV ==='
-          cat research/primate_transition/out_joint/blocked_cv_model_comparison.csv
-          echo '=== COHORT LANDSCAPE SUMMARY ==='
-          cat research/primate_transition/out_cross_species/cohort_landscape_summary.csv
-          echo '=== CODING AUDIT ==='
-          cat research/primate_transition/out_cross_species/coding_mismatch_audit.csv
-          echo '=== CLUSTER BOOTSTRAP COMPARISONS ==='
-          cat research/primate_transition/out_cross_species/cluster_bootstrap_comparisons.csv
-          echo '=== CHILD AGE MODELS ==='
-          cat research/primate_transition/out_cross_species/child_age_models.csv
-          echo '=== CROSS SPECIES SUMMARY ==='
-          cat research/primate_transition/out_cross_species/cross_species_summary.json
+          echo '=== PUBLISHED TWO COORDINATE ==='
+          cat research/primate_transition/out_published/published_two_coordinate_summary.csv
+          echo '=== PUBLISHED PAIRWISE TESTS ==='
+          cat research/primate_transition/out_published/published_pairwise_tests.csv
+          echo '=== CHILD AGE PERMUTATION TESTS ==='
+          cat research/primate_transition/out_published/child_age_permutation_tests.csv
+          echo '=== VERDICT ==='
+          cat research/primate_transition/out_published/published_two_coordinate_verdict.json
+      - name: Upload published analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: primate-published-two-coordinate-results
+          path: research/primate_transition/out_published/
+          if-no-files-found: error
       - name: Upload joint artifacts
         uses: actions/upload-artifact@v4
         with:
