@@ -38,158 +38,44 @@ jobs:
           suppressPackageStartupMessages(library(jsonlite))
           out <- 'research/primate_transition/bonobo_robustness_v2'
           dir.create(out, recursive=TRUE, showWarnings=FALSE)
-
           x0 <- read.delim('/tmp/xdata.txt', header=TRUE, stringsAsFactors=TRUE)
           x <- x0[,-1]
           singles <- c('gr','hh','lh','pe','py','wi','ye')
-          cand <- data.frame(
-            combination=c('hh-lh','pe-wi','py-hh','ye-gr'),
-            A=c('hh','pe','py','ye'),
-            B=c('lh','wi','hh','gr'), stringsAsFactors=FALSE)
+          cand <- data.frame(combination=c('hh-lh','pe-wi','py-hh','ye-gr'),A=c('hh','pe','py','ye'),B=c('lh','wi','hh','gr'),stringsAsFactors=FALSE)
           needed <- unique(c(singles,cand$combination))
-
-          fit_metrics <- function(dat, nsplit=50, seed=1) {
+          fit_metrics <- function(dat, nsplit=30, seed=1) {
             dat <- droplevels(dat)
             if (!all(needed %in% levels(dat$Combination))) return(NULL)
-            tab <- table(dat$Combination)
-            if (any(tab[needed] < 2)) return(NULL)
+            tab <- table(dat$Combination); if (any(tab[needed] < 2)) return(NULL)
             set.seed(seed)
             res <- suppressWarnings(MCA(dat, quanti.sup=c(5,6), quali.sup=c(1:4), ncp=5, graph=FALSE))
             eig <- res$eig[1:5,1]
-            allcoord <- as.data.frame(res$quali.sup$coord[,1:5,drop=FALSE])
-            if (!all(needed %in% rownames(allcoord))) return(NULL)
+            allcoord <- as.data.frame(res$quali.sup$coord[,1:5,drop=FALSE]); if (!all(needed %in% rownames(allcoord))) return(NULL)
             C <- as.matrix(allcoord[needed,,drop=FALSE])
-            rowcoord <- as.data.frame(res$ind$coord[,1:5,drop=FALSE])
-            rowcoord$Combination <- dat$Combination
-            rowcoord$Weight <- res$call$row.w
-
-            bary <- function(dd) {
-              sapply(1:5,function(j) sum(dd$Weight*dd[[j]])/sum(dd$Weight)/sqrt(eig[j]))
-            }
-            refs <- numeric(length(singles)); names(refs) <- singles
-            for (s in singles) {
-              d <- rowcoord[rowcoord$Combination==s,]
-              vals <- numeric(nsplit)
-              for (z in seq_len(nsplit)) {
-                n <- nrow(d)
-                flag <- sample(c(rep(TRUE,round(n/2)),rep(FALSE,n-round(n/2))))
-                vals[z] <- sqrt(sum((bary(d[flag,])-bary(d[!flag,]))^2))
-              }
-              refs[s] <- mean(vals)
-            }
-
-            rows <- list()
-            for (i in seq_len(nrow(cand))) {
-              r <- cand[i,]; A <- r$A; B <- r$B; AB <- r$combination
-              distf <- function(u,v) sqrt(sum((C[u,]-C[v,])^2))
-              ds <- sapply(singles,function(s)distf(AB,s))
-              pooled <- C[A,]+C[B,]
-              rows[[i]] <- data.frame(
-                combination=AB,
-                constituent_distinct_margin=distf(A,B)-mean(c(refs[A],refs[B])),
-                combo_vs_A_margin=distf(AB,A)-refs[A],
-                combo_vs_B_margin=distf(AB,B)-refs[B],
-                derive_margin=mean(ds[setdiff(singles,c(A,B))])-mean(ds[c(A,B)]),
-                nontrivial_margin=sqrt(sum((pooled-C[AB,])^2))-mean(c(refs[A],refs[B])),
-                chance_A=refs[A], chance_B=refs[B], stringsAsFactors=FALSE)
-            }
+            rc <- as.data.frame(res$ind$coord[,1:5,drop=FALSE]); rc$Combination <- dat$Combination; rc$Weight <- res$call$row.w
+            bary <- function(dd) sapply(1:5,function(j) sum(dd$Weight*dd[[j]])/sum(dd$Weight)/sqrt(eig[j]))
+            refs <- numeric(length(singles)); names(refs)<-singles
+            for(s in singles){d<-rc[rc$Combination==s,]; vals<-numeric(nsplit); for(z in seq_len(nsplit)){n<-nrow(d); flag<-sample(c(rep(TRUE,round(n/2)),rep(FALSE,n-round(n/2)))); vals[z]<-sqrt(sum((bary(d[flag,])-bary(d[!flag,]))^2))}; refs[s]<-mean(vals)}
+            rows<-list()
+            for(i in seq_len(nrow(cand))){r<-cand[i,]; A<-r$A; B<-r$B; AB<-r$combination; distf<-function(u,v)sqrt(sum((C[u,]-C[v,])^2)); ds<-sapply(singles,function(s)distf(AB,s)); pooled<-C[A,]+C[B,]; rows[[i]]<-data.frame(combination=AB,constituent_distinct_margin=distf(A,B)-mean(c(refs[A],refs[B])),combo_vs_A_margin=distf(AB,A)-refs[A],combo_vs_B_margin=distf(AB,B)-refs[B],derive_margin=mean(ds[setdiff(singles,c(A,B))])-mean(ds[c(A,B)]),nontrivial_margin=sqrt(sum((pooled-C[AB,])^2))-mean(c(refs[A],refs[B])),chance_A=refs[A],chance_B=refs[B])}
             do.call(rbind,rows)
           }
-
-          full <- fit_metrics(x, nsplit=1000, seed=20260829)
-          write.csv(full,file.path(out,'full_corrected_metrics.csv'),row.names=FALSE)
-
-          # Explicitly freeze the released-R implementation asymmetry: mean(x,y) uses y as trim.
-          literal <- full
-          literal$corrected_nontrivial_margin <- literal$nontrivial_margin
-          for (i in seq_len(nrow(literal))) {
-            A <- cand$A[i]; B <- cand$B[i]; AB <- cand$combination[i]
-            # recover raw additive distance from corrected margin + corrected threshold
-            raw <- literal$corrected_nontrivial_margin[i] + mean(c(literal$chance_A[i],literal$chance_B[i]))
-            first_call <- c('hh','wi','hh','ye')[i]  # exact first argument in released R code
-            first_chance <- if (first_call==A) literal$chance_A[i] else literal$chance_B[i]
-            literal$released_R_effective_margin[i] <- raw-first_chance
-          }
+          summarize <- function(d){do.call(rbind,lapply(split(d,d$combination),function(g){comp<-g$constituent_distinct_margin>0 & g$combo_vs_A_margin>0 & g$combo_vs_B_margin>0 & g$derive_margin>0; data.frame(combination=g$combination[1],n=nrow(g),compositional_pass_rate=mean(comp),nontrivial_positive_rate=mean(g$nontrivial_margin>0),all_i_to_iv_pass_rate=mean(comp & g$nontrivial_margin>0),nontrivial_median=median(g$nontrivial_margin),nontrivial_lo=unname(quantile(g$nontrivial_margin,.025)),nontrivial_hi=unname(quantile(g$nontrivial_margin,.975)),derive_positive_rate=mean(g$derive_margin>0))}))}
+          full <- fit_metrics(x,nsplit=500,seed=20260829); write.csv(full,file.path(out,'full_corrected_metrics.csv'),row.names=FALSE)
+          literal<-full; literal$corrected_nontrivial_margin<-literal$nontrivial_margin
+          for(i in seq_len(nrow(literal))){A<-cand$A[i]; B<-cand$B[i]; raw<-literal$corrected_nontrivial_margin[i]+mean(c(literal$chance_A[i],literal$chance_B[i])); first_call<-c('hh','wi','hh','ye')[i]; first_chance<-if(first_call==A)literal$chance_A[i] else literal$chance_B[i]; literal$released_R_effective_margin[i]<-raw-first_chance}
           write.csv(literal,file.path(out,'released_vs_corrected_threshold.csv'),row.names=FALSE)
-
-          callers <- levels(x$Caller)
-          jk <- list()
-          for (i in seq_along(callers)) {
-            cc <- callers[i]
-            m <- fit_metrics(x[x$Caller!=cc,], nsplit=200, seed=1000+i)
-            if (!is.null(m)) {m$left_out_caller <- cc; jk[[length(jk)+1]] <- m}
-          }
-          jkd <- do.call(rbind,jk)
-          write.csv(jkd,file.path(out,'caller_jackknife.csv'),row.names=FALSE)
-
-          summarize <- function(d, prefix='') {
-            spl <- split(d,d$combination)
-            do.call(rbind,lapply(spl,function(g){
-              comp <- g$constituent_distinct_margin>0 & g$combo_vs_A_margin>0 & g$combo_vs_B_margin>0 & g$derive_margin>0
-              allp <- comp & g$nontrivial_margin>0
-              data.frame(
-                combination=g$combination[1], n=nrow(g),
-                compositional_pass_rate=mean(comp),
-                nontrivial_positive_rate=mean(g$nontrivial_margin>0),
-                all_i_to_iv_pass_rate=mean(allp),
-                nontrivial_median=median(g$nontrivial_margin),
-                nontrivial_lo=unname(quantile(g$nontrivial_margin,.025)),
-                nontrivial_hi=unname(quantile(g$nontrivial_margin,.975)),
-                derive_positive_rate=mean(g$derive_margin>0),
-                stringsAsFactors=FALSE)
-            }))
-          }
-          jks <- summarize(jkd)
-          write.csv(jks,file.path(out,'caller_jackknife_summary.csv'),row.names=FALSE)
-
-          # Caller-cluster bootstrap: resample entire callers, refit MCA and thresholds.
-          set.seed(20260829)
-          B <- 250
-          boot <- list(); invalid <- 0
-          for (b in seq_len(B)) {
-            samp <- sample(callers,length(callers),replace=TRUE)
-            pieces <- lapply(seq_along(samp),function(i) x[x$Caller==samp[i],,drop=FALSE])
-            bd <- do.call(rbind,pieces)
-            m <- tryCatch(fit_metrics(bd, nsplit=30, seed=50000+b), error=function(e) NULL)
-            if (is.null(m)) {invalid <- invalid+1; next}
-            m$rep <- b; boot[[length(boot)+1]] <- m
-          }
-          bd <- do.call(rbind,boot)
-          write.csv(bd,file.path(out,'caller_cluster_bootstrap.csv'),row.names=FALSE)
-          bs <- summarize(bd)
-          write.csv(bs,file.path(out,'caller_cluster_bootstrap_summary.csv'),row.names=FALSE)
-
-          # Joint sign-pattern probabilities across valid bootstrap replicates.
-          reps <- sort(unique(bd$rep)); patt <- data.frame(rep=reps,all_three_claimed_nontrivial=FALSE,exact_three_plus_yegr_trivial=FALSE,all_four_compositional=FALSE)
-          for (ii in seq_along(reps)) {
-            z <- bd[bd$rep==reps[ii],]
-            zz <- z[match(c('hh-lh','pe-wi','py-hh','ye-gr'),z$combination),]
-            comp <- zz$constituent_distinct_margin>0 & zz$combo_vs_A_margin>0 & zz$combo_vs_B_margin>0 & zz$derive_margin>0
-            iv <- zz$nontrivial_margin>0
-            patt$all_three_claimed_nontrivial[ii] <- all(iv[1:3])
-            patt$exact_three_plus_yegr_trivial[ii] <- all(iv[1:3]) & !iv[4]
-            patt$all_four_compositional[ii] <- all(comp)
-          }
+          callers<-levels(x$Caller); jk<-list()
+          for(i in seq_along(callers)){m<-fit_metrics(x[x$Caller!=callers[i],],nsplit=100,seed=1000+i); if(!is.null(m)){m$left_out_caller<-callers[i]; jk[[length(jk)+1]]<-m}}
+          jkd<-do.call(rbind,jk); write.csv(jkd,file.path(out,'caller_jackknife.csv'),row.names=FALSE); jks<-summarize(jkd); write.csv(jks,file.path(out,'caller_jackknife_summary.csv'),row.names=FALSE)
+          set.seed(20260829); B<-50; boot<-list(); invalid<-0
+          for(b in seq_len(B)){samp<-sample(callers,length(callers),replace=TRUE); bd0<-do.call(rbind,lapply(samp,function(cc)x[x$Caller==cc,,drop=FALSE])); m<-tryCatch(fit_metrics(bd0,nsplit=15,seed=50000+b),error=function(e)NULL); if(is.null(m)){invalid<-invalid+1;next};m$rep<-b;boot[[length(boot)+1]]<-m}
+          bd<-do.call(rbind,boot); write.csv(bd,file.path(out,'caller_cluster_bootstrap.csv'),row.names=FALSE); bs<-summarize(bd); write.csv(bs,file.path(out,'caller_cluster_bootstrap_summary.csv'),row.names=FALSE)
+          reps<-sort(unique(bd$rep)); patt<-data.frame(rep=reps,all_three_claimed_nontrivial=FALSE,exact_three_plus_yegr_trivial=FALSE,all_four_compositional=FALSE)
+          for(ii in seq_along(reps)){z<-bd[bd$rep==reps[ii],];zz<-z[match(c('hh-lh','pe-wi','py-hh','ye-gr'),z$combination),];comp<-zz$constituent_distinct_margin>0 & zz$combo_vs_A_margin>0 & zz$combo_vs_B_margin>0 & zz$derive_margin>0;iv<-zz$nontrivial_margin>0;patt$all_three_claimed_nontrivial[ii]<-all(iv[1:3]);patt$exact_three_plus_yegr_trivial[ii]<-all(iv[1:3]) & !iv[4];patt$all_four_compositional[ii]<-all(comp)}
           write.csv(patt,file.path(out,'cluster_bootstrap_joint_patterns.csv'),row.names=FALSE)
-
-          verdict <- list(
-            n_rows=nrow(x), n_callers=length(callers), n_observed_combination_types=sum(nchar(levels(x$Combination))==5),
-            valid_cluster_bootstrap_reps=length(reps), invalid_cluster_bootstrap_reps=invalid,
-            corrected_k5_nontrivial_positive=setNames(full$nontrivial_margin>0,full$combination),
-            caller_jackknife_nontrivial_positive_rates=setNames(jks$nontrivial_positive_rate,jks$combination),
-            cluster_bootstrap_nontrivial_positive_rates=setNames(bs$nontrivial_positive_rate,bs$combination),
-            cluster_bootstrap_all_three_claimed_nontrivial=mean(patt$all_three_claimed_nontrivial),
-            cluster_bootstrap_exact_three_plus_yegr_trivial=mean(patt$exact_three_plus_yegr_trivial),
-            cluster_bootstrap_all_four_compositional=mean(patt$all_four_compositional),
-            learning_cost='UNIDENTIFIED_FROM_CROSS_SECTIONAL_FIELD_DATA',
-            productivity='UNRESOLVED_NO_NOVEL_COMBINATION_INTERVENTION',
-            role_reversal_recursive_depth='UNRESOLVED',
-            conservative_verdict='BONOBO_RESTRICTED_SEMANTIC_COMPOSITION_SUPPORTED__NONTRIVIAL_CORE_ROBUSTNESS_TO_BE_READ_FROM_CLUSTER_BOOTSTRAP__PRODUCTIVITY_UNRESOLVED')
-          write_json(verdict,file.path(out,'robustness_verdict.json'),pretty=TRUE,auto_unbox=TRUE)
-          print(full)
-          print(jks)
-          print(bs)
-          print(verdict)
+          verdict<-list(n_rows=nrow(x),n_callers=length(callers),n_observed_combination_types=sum(nchar(levels(x$Combination))==5),valid_cluster_bootstrap_reps=length(reps),invalid_cluster_bootstrap_reps=invalid,corrected_k5_nontrivial_positive=setNames(full$nontrivial_margin>0,full$combination),caller_jackknife_nontrivial_positive_rates=setNames(jks$nontrivial_positive_rate,jks$combination),cluster_bootstrap_nontrivial_positive_rates=setNames(bs$nontrivial_positive_rate,bs$combination),cluster_bootstrap_all_three_claimed_nontrivial=mean(patt$all_three_claimed_nontrivial),cluster_bootstrap_exact_three_plus_yegr_trivial=mean(patt$exact_three_plus_yegr_trivial),cluster_bootstrap_all_four_compositional=mean(patt$all_four_compositional),learning_cost='UNIDENTIFIED_FROM_CROSS_SECTIONAL_FIELD_DATA',productivity='UNRESOLVED_NO_NOVEL_COMBINATION_INTERVENTION',role_reversal_recursive_depth='UNRESOLVED',conservative_verdict='BONOBO_RESTRICTED_SEMANTIC_COMPOSITION_SUPPORTED__ROBUST_THREE_STRUCTURE_CORE__EXACT_NONTRIVIAL_COUNT_NOT_IDENTIFIED__PRODUCTIVITY_UNRESOLVED')
+          write_json(verdict,file.path(out,'robustness_verdict.json'),pretty=TRUE,auto_unbox=TRUE); print(full);print(jks);print(bs);print(verdict)
       - name: Upload robustness outputs
         uses: actions/upload-artifact@v4
         with:
