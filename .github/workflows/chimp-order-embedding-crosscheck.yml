@@ -1,0 +1,82 @@
+name: chimp-order-embedding-crosscheck
+on:
+  push:
+    paths:
+      - '.github/workflows/chimp-order-embedding-crosscheck.yml'
+  workflow_dispatch:
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q pandas numpy scipy
+      - name: Analyze reversed bigrams
+        run: |
+          python - <<'PY'
+          import pandas as pd, numpy as np, json, os
+          from scipy.spatial.distance import jensenshannon
+          from scipy.stats import chi2_contingency
+          from urllib.request import urlretrieve
+
+          os.makedirs('research/primate_transition/chimp_order_embedding', exist_ok=True)
+          url='https://raw.githubusercontent.com/tozbu/Chimpanzee_bigram_meaning/refs/heads/main/calldata.csv'
+          urlretrieve(url,'/tmp/calldata.csv')
+          d=pd.read_csv('/tmp/calldata.csv')
+          pairs=[('GR_HO','HO_GR'),('GR_PG','PG_GR'),('HO_PH','PH_HO'),('PG_PN','PN_PG')]
+          # robust frequent embedded bigrams from Girard-Buttoz et al. 2022:
+          embedded={'GR_PG','HO_PH','PH_PB','PG_GR','PH_PS','PG_PB','PB_PH','PG_PN','PB_PS','PS_SC','SC_PS','PB_BK','PS_PB'}
+          rows=[]
+          events=sorted(set('_'.join(d.context.astype(str)).split('_')))
+          for a,b in pairs:
+              da=d[d['call.name'].isin([a,b])].copy()
+              # Expand multi-event context labels into binary event features.
+              A=np.array([[1 if e in str(c).split('_') else 0 for e in events] for c in da.loc[da['call.name']==a,'context']])
+              B=np.array([[1 if e in str(c).split('_') else 0 for e in events] for c in da.loc[da['call.name']==b,'context']])
+              pa=A.mean(0) if len(A) else np.zeros(len(events)); pb=B.mean(0) if len(B) else np.zeros(len(events))
+              # Normalize event prevalence vectors for JS; add epsilon.
+              p=pa+1e-12; q=pb+1e-12; p=p/p.sum(); q=q/q.sum()
+              js=float(jensenshannon(p,q,base=2)**2)
+              # Caller overlap and token counts.
+              ca=set(da.loc[da['call.name']==a,'caller']); cb=set(da.loc[da['call.name']==b,'caller'])
+              # Strongest event-prevalence differences.
+              diff=pa-pb
+              top=np.argsort(np.abs(diff))[::-1][:5]
+              topdiff='; '.join(f'{events[i]}:{diff[i]:+.3f}' for i in top if abs(diff[i])>0)
+              rows.append({
+                  'pair':f'{a}<->{b}','A':a,'B':b,
+                  'n_A':int((da['call.name']==a).sum()),'n_B':int((da['call.name']==b).sum()),
+                  'callers_A':len(ca),'callers_B':len(cb),'caller_overlap':len(ca&cb),
+                  'JS_context_bits':js,'top_event_prevalence_differences_A_minus_B':topdiff,
+                  'A_robustly_embedded_2022':a in embedded,
+                  'B_robustly_embedded_2022':b in embedded,
+                  'both_orientations_robustly_embedded_2022':a in embedded and b in embedded,
+              })
+          out=pd.DataFrame(rows)
+          # literature-established clear order effects from 2025 paper
+          out['clear_order_effect_2025']=out['pair'].isin(['GR_HO<->HO_GR','HO_PH<->PH_HO'])
+          out['order_effect_AND_both_orientations_embedded']=out['clear_order_effect_2025'] & out['both_orientations_robustly_embedded_2022']
+          out.to_csv('research/primate_transition/chimp_order_embedding/reversed_bigram_crosscheck.csv',index=False)
+          summary={
+              'n_reversed_pairs':4,
+              'n_clear_order_effect_pairs':int(out.clear_order_effect_2025.sum()),
+              'n_pairs_both_orientations_robustly_embedded':int(out.both_orientations_robustly_embedded_2022.sum()),
+              'n_pairs_clear_order_effect_and_both_orientations_robustly_embedded':int(out.order_effect_AND_both_orientations_embedded.sum()),
+              'closest_candidate':'HO_PH<->PH_HO: clear semantic order effect, but only HO_PH is in the robust 2022 embedded-bigram set.',
+              'structural_candidate':'GR_PG<->PG_GR: both orientations are robustly embedded, but this pair was not one of the two clear semantic order-effect pairs in 2025.',
+              'verdict':'LINEAR_ORDER_EFFECT_SUPPORTED__BIDIRECTIONAL_TRIGRAM_EMBEDDING_SUPPORTED_FOR_A_DIFFERENT_PAIR__NO_SINGLE_REVERSED_PAIR_CURRENTLY_HAS_BOTH_CLEAR_SEMANTIC_ORDER_EFFECT_AND_ROBUST_BIDIRECTIONAL_EMBEDDING'
+          }
+          with open('research/primate_transition/chimp_order_embedding/summary.json','w') as f: json.dump(summary,f,indent=2)
+          with open('research/primate_transition/chimp_order_embedding/RESULT.md','w') as f:
+              f.write('# Chimpanzee order-effect × embedding cross-check\n\n')
+              f.write(out.to_markdown(index=False))
+              f.write('\n\n## Verdict\n\n'+summary['verdict']+'\n')
+          print(out.to_string(index=False))
+          print(json.dumps(summary,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimp-order-embedding-crosscheck
+          path: research/primate_transition/chimp_order_embedding/
