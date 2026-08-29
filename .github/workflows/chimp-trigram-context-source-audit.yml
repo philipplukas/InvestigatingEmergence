@@ -1,0 +1,89 @@
+name: chimp-trigram-context-source-audit
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/chimp-trigram-context-source-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -q pandas openpyxl requests
+      - name: Download 2022 source workbook and 2025 meaning data
+        run: |
+          set -euxo pipefail
+          mkdir -p research/primate_transition/chimp_trigram_context_audit
+          curl -L --fail --retry 3 'https://hdl.handle.net/21.11116/0000-000A-77D8-D' -o /tmp/suppl4.xlsx
+          curl -L --fail --retry 3 'https://raw.githubusercontent.com/tozbu/Chimpanzee_bigram_meaning/main/calldata.csv' -o /tmp/calldata_2025.csv
+          cp /tmp/suppl4.xlsx research/primate_transition/chimp_trigram_context_audit/GirardButtoz_2022_Suppl4.xlsx
+          cp /tmp/calldata_2025.csv research/primate_transition/chimp_trigram_context_audit/calldata_2025.csv
+      - name: Inspect workbook and search join keys
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          import pandas as pd
+          out=Path('research/primate_transition/chimp_trigram_context_audit')
+          xls=pd.ExcelFile('/tmp/suppl4.xlsx')
+          inventory=[]
+          candidate_rows=[]
+          for sh in xls.sheet_names:
+              df=pd.read_excel('/tmp/suppl4.xlsx',sheet_name=sh)
+              safe=re.sub(r'[^A-Za-z0-9._-]+','_',sh)
+              df.to_csv(out/f'sheet__{safe}.csv',index=False)
+              cols=[str(c) for c in df.columns]
+              inventory.append({'sheet':sh,'rows':len(df),'cols':cols})
+              low=' '.join(c.lower() for c in cols)
+              has_context=any(k in low for k in ['context','event','activity','feeding','travel','rest','groom'])
+              has_caller=any(k in low for k in ['caller','individual','subject','chimp'])
+              has_date=any(k in low for k in ['date','day','recording','file','id'])
+              has_sequence=any(k in low for k in ['sequence','trigram','bigram','call','unit'])
+              if has_sequence or has_context or has_caller or has_date:
+                  candidate_rows.append({'sheet':sh,'rows':len(df),'has_context_like':has_context,'has_caller_like':has_caller,'has_date_or_recording_like':has_date,'has_sequence_like':has_sequence,'columns':' | '.join(cols)})
+          pd.DataFrame(inventory).to_json(out/'workbook_inventory.json',orient='records',indent=2)
+          pd.DataFrame(candidate_rows).to_csv(out/'candidate_join_sheets.csv',index=False)
+
+          d25=pd.read_csv('/tmp/calldata_2025.csv')
+          audit={
+              '2022_sheets':xls.sheet_names,
+              '2025_rows':len(d25),
+              '2025_callers':int(d25.caller.nunique()),
+              '2025_date_min':str(d25.date.min()),
+              '2025_date_max':str(d25.date.max()),
+              '2025_columns':list(d25.columns),
+          }
+          # Find exact caller/date values anywhere in workbook text-like columns.
+          callers=set(d25['caller'].astype(str).unique())
+          dates=set(d25['date'].astype(str).unique())
+          matches=[]
+          for sh in xls.sheet_names:
+              df=pd.read_excel('/tmp/suppl4.xlsx',sheet_name=sh,dtype=str)
+              for c in df.columns:
+                  vals=set(df[c].dropna().astype(str).str.strip())
+                  cm=sorted(callers & vals)
+                  dm=sorted(dates & vals)
+                  if cm or dm:
+                      matches.append({'sheet':sh,'column':str(c),'caller_overlap_n':len(cm),'date_overlap_n':len(dm),'caller_examples':';'.join(cm[:10]),'date_examples':';'.join(dm[:10])})
+          pd.DataFrame(matches).to_csv(out/'exact_value_join_matches.csv',index=False)
+          audit['exact_match_columns']=matches
+          (out/'audit_summary.json').write_text(json.dumps(audit,indent=2))
+          print('SHEETS',xls.sheet_names)
+          print(pd.DataFrame(candidate_rows).to_string(index=False))
+          print('MATCHES')
+          print(pd.DataFrame(matches).to_string(index=False) if matches else 'NONE')
+          PY
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: chimp-trigram-context-source-audit
+          path: research/primate_transition/chimp_trigram_context_audit/
+          if-no-files-found: error
