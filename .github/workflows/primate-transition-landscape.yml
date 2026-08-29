@@ -1,0 +1,32 @@
+name: primate-transition-landscape
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - 'research/primate_transition/**'
+      - '.github/workflows/primate-transition-landscape.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pandas numpy scikit-learn
+      - name: Run analysis
+        run: python research/primate_transition/analyze_transition.py
+      - name: Print result summary
+        run: |
+          cat research/primate_transition/out/subject_model_summary.csv
+          cat research/primate_transition/out/run_summary.json
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: primate-transition-landscape-results
+          path: research/primate_transition/out/
+          if-no-files-found: error
