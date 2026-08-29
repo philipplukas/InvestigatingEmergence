@@ -1,0 +1,191 @@
+name: bonobo-composition-reanalysis
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/bonobo-composition-reanalysis.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::FactoMineR
+            any::jsonlite
+      - name: Download public bonobo data
+        run: |
+          python - <<'PY'
+          import requests, pathlib
+          aid=26217803
+          meta=requests.get(f'https://api.figshare.com/v2/articles/{aid}',timeout=60).json()
+          f=next(x for x in meta['files'] if x['name']=='xdata.txt')
+          r=requests.get(f['download_url'],timeout=120); r.raise_for_status()
+          pathlib.Path('/tmp/xdata.txt').write_bytes(r.content)
+          print('downloaded',len(r.content),'bytes')
+          PY
+      - name: Reproduce semantic geometry and robustness slices
+        shell: Rscript {0}
+        run: |
+          suppressPackageStartupMessages(library(FactoMineR))
+          suppressPackageStartupMessages(library(jsonlite))
+          dir.create('research/primate_transition/bonobo_reanalysis', recursive=TRUE, showWarnings=FALSE)
+          out <- 'research/primate_transition/bonobo_reanalysis'
+
+          x0 <- read.delim('/tmp/xdata.txt', header=TRUE, stringsAsFactors=TRUE)
+          xdata <- x0[,-1]
+          res <- MCA(xdata, quanti.sup=c(5,6), quali.sup=c(1:4), ncp=10, graph=FALSE)
+          eig <- res$eig[,1]
+          coord10 <- as.data.frame(res$quali.sup$coord[1:26,1:10])
+          write.csv(coord10, file.path(out,'utterance_coordinates_10d.csv'))
+          rowcoord <- as.data.frame(res$ind$coord[,1:10])
+          rowcoord$Combination <- xdata$Combination
+          rowcoord$Caller <- xdata$Caller
+          rowcoord$Weight <- res$call$row.w
+          write.csv(rowcoord, file.path(out,'row_coordinates_10d.csv'), row.names=FALSE)
+
+          single <- c('gr','hh','lh','pe','py','wi','ye')
+          candidates <- data.frame(
+            combination=c('hh-lh','pe-wi','py-hh','ye-gr'),
+            A=c('hh','pe','py','ye'),
+            B=c('lh','wi','hh','gr'), stringsAsFactors=FALSE)
+
+          # reproduce chance values from authors' split-half construction for arbitrary k
+          chance_values <- function(k, nsplit=15, seed=123) {
+            ans <- numeric(length(single)); names(ans)<-single
+            for (level in single) {
+              d <- rowcoord[rowcoord$Combination==level,]
+              vals <- numeric(nsplit)
+              set.seed(seed)
+              for (s in seq_len(nsplit)) {
+                n <- nrow(d)
+                flag <- sample(c(rep(TRUE,round(n/2)),rep(FALSE,n-round(n/2))))
+                bary <- function(dd) {
+                  sapply(seq_len(k), function(j) sum(dd$Weight*dd[[j]])/sum(dd$Weight)/sqrt(eig[j]))
+                }
+                vals[s] <- sqrt(sum((bary(d[flag,])-bary(d[!flag,]))^2))
+              }
+              ans[level] <- mean(vals)
+            }
+            ans
+          }
+
+          candidate_metrics <- function(k, nsplit=15) {
+            C <- as.matrix(coord10[,1:k,drop=FALSE])
+            ref <- chance_values(k, nsplit=nsplit)
+            rows <- list()
+            for (ii in seq_len(nrow(candidates))) {
+              r<-candidates[ii,]; A<-r$A; B<-r$B; AB<-r$combination
+              dAB <- function(u,v) sqrt(sum((C[u,]-C[v,])^2))
+              m_A_B <- dAB(A,B)-mean(c(ref[A],ref[B]))
+              m_AB_A <- dAB(AB,A)-ref[A]
+              m_AB_B <- dAB(AB,B)-ref[B]
+              allsingle <- single
+              ds <- sapply(allsingle,function(s)dAB(AB,s))
+              within <- mean(ds[c(A,B)])
+              outside <- mean(ds[setdiff(allsingle,c(A,B))])
+              derive_margin <- outside-within
+              pooled <- C[A,]+C[B,]
+              nontriv <- sqrt(sum((pooled-C[AB,])^2))-mean(c(ref[A],ref[B]))
+              rows[[ii]]<-data.frame(k=k,combination=AB,A=A,B=B,
+                constituent_distinct_margin=m_A_B,
+                combo_vs_A_margin=m_AB_A, combo_vs_B_margin=m_AB_B,
+                derive_margin=derive_margin, nontrivial_margin=nontriv,
+                pass_i=m_A_B>0, pass_ii=(m_AB_A>0 & m_AB_B>0),
+                pass_iii=derive_margin>0, pass_iv=nontriv>0)
+            }
+            do.call(rbind,rows)
+          }
+
+          dims <- do.call(rbind,lapply(2:10,function(k) candidate_metrics(k, nsplit=200)))
+          write.csv(dims,file.path(out,'dimension_sensitivity.csv'),row.names=FALSE)
+
+          # fixed-basis conditional bootstrap: resample occurrences within each utterance type,
+          # recompute type barycenters and call chance thresholds in the fixed MCA basis.
+          set.seed(20260829)
+          B <- 2000
+          k <- 5
+          full_ref <- chance_values(k, nsplit=500)
+          baseC <- as.matrix(coord10[,1:k,drop=FALSE])
+          verify <- data.frame(type=rownames(baseC), maxabs=NA_real_)
+          bary_type <- function(type, idx=NULL) {
+            d <- rowcoord[rowcoord$Combination==type,]
+            if (!is.null(idx)) d <- d[idx,]
+            sapply(seq_len(k), function(j) sum(d$Weight*d[[j]])/sum(d$Weight)/sqrt(eig[j]))
+          }
+          for (i in seq_len(nrow(verify))) verify$maxabs[i] <- max(abs(baseC[verify$type[i],]-bary_type(verify$type[i])))
+          write.csv(verify,file.path(out,'barycenter_formula_verification.csv'),row.names=FALSE)
+
+          bm <- list()
+          alltypes <- rownames(baseC)
+          for (b in seq_len(B)) {
+            BC <- matrix(NA_real_,nrow=length(alltypes),ncol=k,dimnames=list(alltypes,NULL))
+            for (type in alltypes) {
+              d <- rowcoord[rowcoord$Combination==type,]
+              ix <- sample(seq_len(nrow(d)), nrow(d), replace=TRUE)
+              BC[type,] <- bary_type(type,ix)
+            }
+            # bootstrap chance threshold by two independent half samples of each single-call bootstrap sample
+            bref <- numeric(length(single)); names(bref)<-single
+            for (s in single) {
+              d <- rowcoord[rowcoord$Combination==s,]
+              n<-nrow(d); ix<-sample(seq_len(n),n,replace=TRUE); dd<-d[ix,]
+              flag<-sample(c(rep(TRUE,round(n/2)),rep(FALSE,n-round(n/2))))
+              bb<-function(z)sapply(seq_len(k),function(j)sum(z$Weight*z[[j]])/sum(z$Weight)/sqrt(eig[j]))
+              bref[s]<-sqrt(sum((bb(dd[flag,])-bb(dd[!flag,]))^2))
+            }
+            for (ii in seq_len(nrow(candidates))) {
+              r<-candidates[ii,]; A<-r$A; BB<-r$B; AB<-r$combination
+              distf<-function(u,v)sqrt(sum((BC[u,]-BC[v,])^2))
+              ds<-sapply(single,function(s)distf(AB,s))
+              pooled<-BC[A,]+BC[BB,]
+              bm[[length(bm)+1]]<-data.frame(rep=b,combination=AB,
+                constituent_distinct_margin=distf(A,BB)-mean(c(bref[A],bref[BB])),
+                combo_vs_A_margin=distf(AB,A)-bref[A],
+                combo_vs_B_margin=distf(AB,BB)-bref[BB],
+                derive_margin=mean(ds[setdiff(single,c(A,BB))])-mean(ds[c(A,BB)]),
+                nontrivial_margin=sqrt(sum((pooled-BC[AB,])^2))-mean(c(bref[A],bref[BB])))
+            }
+          }
+          boot <- do.call(rbind,bm)
+          write.csv(boot,file.path(out,'fixed_basis_bootstrap.csv'),row.names=FALSE)
+          summ <- do.call(rbind,lapply(split(boot,boot$combination),function(d){
+            vals<-c('constituent_distinct_margin','combo_vs_A_margin','combo_vs_B_margin','derive_margin','nontrivial_margin')
+            outd<-data.frame(combination=d$combination[1])
+            for(v in vals){
+              outd[[paste0(v,'_median')]]<-median(d[[v]])
+              outd[[paste0(v,'_lo')]]<-quantile(d[[v]],.025)
+              outd[[paste0(v,'_hi')]]<-quantile(d[[v]],.975)
+              outd[[paste0(v,'_positive_prob')]]<-mean(d[[v]]>0)
+            }
+            outd
+          }))
+          write.csv(summ,file.path(out,'bootstrap_summary.csv'),row.names=FALSE)
+
+          counts <- as.data.frame(table(xdata$Combination)); names(counts)<-c('Combination','N')
+          write.csv(counts,file.path(out,'utterance_type_counts.csv'),row.names=FALSE)
+          caller_counts <- aggregate(rep(1,nrow(xdata)),by=list(Combination=xdata$Combination),FUN=function(z)length(z))
+          caller_unique <- aggregate(as.character(xdata$Caller),by=list(Combination=xdata$Combination),FUN=function(z)length(unique(z)))
+          names(caller_unique)[2]<-'N_unique_callers'
+          write.csv(caller_unique,file.path(out,'utterance_type_unique_callers.csv'),row.names=FALSE)
+
+          meta <- list(n_rows=nrow(xdata), n_callers=length(unique(xdata$Caller)), n_types=length(levels(xdata$Combination)),
+            eig_first10=eig[1:10], explained_first5=sum(eig[1:5]), max_barycenter_verification=max(verify$maxabs),
+            bootstrap_reps=B)
+          write(toJSON(meta,pretty=TRUE,auto_unbox=TRUE),file.path(out,'summary.json'))
+          print(meta); print(candidate_metrics(5,nsplit=500)); print(summ)
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bonobo-composition-reanalysis
+          path: research/primate_transition/bonobo_reanalysis/
+          if-no-files-found: error
+          compression-level: 6
