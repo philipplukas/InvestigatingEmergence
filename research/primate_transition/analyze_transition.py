@@ -32,7 +32,7 @@ def const_fit(y):
 
 def trend_fit(y):
     x = np.linspace(-1, 1, len(y)).reshape(-1, 1)
-    m = LogisticRegression(multi_class="multinomial", solver="lbfgs", C=1e6, max_iter=2000)
+    m = LogisticRegression(solver="lbfgs", C=1e6, max_iter=2000)
     m.fit(x, y)
     P = np.full((len(y), 4), EPS)
     P[:, m.classes_.astype(int)] = m.predict_proba(x)
