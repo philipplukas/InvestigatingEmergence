@@ -21,7 +21,7 @@ jobs:
       - name: Run joint landscape analysis
         run: python research/primate_transition/joint_landscape.py
       - name: Run blocked list-level validation
-        run: python research/primate_transition/joint_landscape_cv.py
+        run: python research/primate_transition/joint_landscape_cv_fast.py
       - name: Print joint landscape results
         run: |
           echo '=== JOINT MODEL COMPARISON ==='
