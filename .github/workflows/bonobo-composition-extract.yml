@@ -1,0 +1,106 @@
+name: bonobo-composition-extract
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/bonobo-composition-extract.yml'
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -q requests pandas numpy scipy openpyxl pyreadr
+      - name: Download Figshare collection and convert compact data
+        run: |
+          set -euxo pipefail
+          python - <<'PY'
+          import json, re, shutil, requests
+          from pathlib import Path
+          import pandas as pd
+
+          COLLECTION=7648628
+          out=Path('research/primate_transition/bonobo_composition_extract')
+          raw=out/'raw'; conv=out/'converted_csv'
+          raw.mkdir(parents=True,exist_ok=True); conv.mkdir(parents=True,exist_ok=True)
+
+          sess=requests.Session()
+          arts=sess.get(f'https://api.figshare.com/v2/collections/{COLLECTION}/articles',timeout=60)
+          arts.raise_for_status(); arts=arts.json()
+          inventory=[]
+          for a in arts:
+              aid=a['id']
+              meta=sess.get(f'https://api.figshare.com/v2/articles/{aid}',timeout=60)
+              meta.raise_for_status(); meta=meta.json()
+              article_dir=raw/f'article_{aid}'
+              article_dir.mkdir(exist_ok=True)
+              (article_dir/'article_meta.json').write_text(json.dumps(meta,indent=2))
+              for f in meta.get('files',[]):
+                  name=f['name']; url=f.get('download_url')
+                  if not url: continue
+                  dest=article_dir/name
+                  with sess.get(url,stream=True,timeout=180) as r:
+                      r.raise_for_status()
+                      with open(dest,'wb') as h:
+                          for chunk in r.iter_content(chunk_size=1024*1024):
+                              if chunk: h.write(chunk)
+                  inventory.append({'article_id':aid,'article_title':meta.get('title'),'file_name':name,'size_bytes':dest.stat().st_size,'path':str(dest)})
+
+                  ext=dest.suffix.lower()
+                  safe=re.sub(r'[^A-Za-z0-9._-]+','_',f'{aid}_{name}')
+                  try:
+                      if ext=='.csv':
+                          df=pd.read_csv(dest)
+                          df.to_csv(conv/f'{safe}.csv',index=False)
+                      elif ext in {'.xlsx','.xls'}:
+                          xls=pd.ExcelFile(dest)
+                          for sheet in xls.sheet_names:
+                              df=pd.read_excel(dest,sheet_name=sheet)
+                              ss=re.sub(r'[^A-Za-z0-9._-]+','_',sheet)
+                              df.to_csv(conv/f'{safe}__{ss}.csv',index=False)
+                      elif ext=='.rds':
+                          import pyreadr
+                          obj=pyreadr.read_r(dest)
+                          for key,df in obj.items():
+                              if hasattr(df,'to_csv'):
+                                  kk=re.sub(r'[^A-Za-z0-9._-]+','_',str(key) or 'object')
+                                  df.to_csv(conv/f'{safe}__{kk}.csv',index=False)
+                  except Exception as e:
+                      (conv/f'{safe}.conversion_error.txt').write_text(repr(e))
+
+          pd.DataFrame(inventory).to_csv(out/'figshare_inventory.csv',index=False)
+          print(pd.DataFrame(inventory).to_string(index=False))
+          print('\nConverted files:')
+          for p in sorted(conv.glob('*')): print(p, p.stat().st_size)
+          PY
+      - name: Print R code and CSV schemas
+        run: |
+          set -euxo pipefail
+          find research/primate_transition/bonobo_composition_extract/raw -type f \( -iname '*.R' -o -iname '*.r' -o -iname '*.Rmd' -o -iname '*.txt' \) -maxdepth 4 -print -exec sh -c 'echo ==== $1; sed -n "1,260p" "$1"' _ {} \;
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          root=Path('research/primate_transition/bonobo_composition_extract/converted_csv')
+          for p in sorted(root.glob('*.csv')):
+              try:
+                  df=pd.read_csv(p)
+                  print('\n###',p.name,'shape=',df.shape)
+                  print('columns=',list(df.columns))
+                  print(df.head(8).to_string(index=False))
+              except Exception as e: print('ERR',p,e)
+          PY
+      - name: Upload extraction
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bonobo-composition-extract
+          path: research/primate_transition/bonobo_composition_extract/
+          if-no-files-found: error
+          compression-level: 6
