@@ -17,26 +17,26 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --upgrade pip pandas numpy scikit-learn
-      - name: Run analysis
+        run: python -m pip install --upgrade pip pandas numpy scipy
+      - name: Run joint landscape analysis
+        run: python research/primate_transition/joint_landscape.py
+      - name: Print joint landscape results
         run: |
-          python research/primate_transition/analyze_transition.py || \
-            (echo 'JSON summary serialization failed after CSV outputs; preserving computed results' && test -f research/primate_transition/out/robustness_summary.csv)
-      - name: Print result summary
-        run: |
-          echo '=== SUBJECT MODELS ==='
-          cat research/primate_transition/out/subject_model_summary.csv
-          echo '=== ROBUSTNESS ==='
-          cat research/primate_transition/out/robustness_summary.csv
-          echo '=== HMM EXPOSURE OCCUPANCY ==='
-          cat research/primate_transition/out/hmm_exposure_occupancy.csv
-          echo '=== CRITICALITY REGIONS ==='
-          cat research/primate_transition/out/criticality_regions.csv
-          echo '=== HMM SWITCHES ==='
-          cat research/primate_transition/out/hmm_switches.csv
+          echo '=== JOINT MODEL COMPARISON ==='
+          cat research/primate_transition/out_joint/joint_model_comparison.csv
+          echo '=== STATE SPACE SUPPORT ==='
+          cat research/primate_transition/out_joint/state_space_support.csv
+          echo '=== BASIN ENERGIES ==='
+          cat research/primate_transition/out_joint/empirical_basin_energies.csv
+          echo '=== BARRIER PROXIES ==='
+          cat research/primate_transition/out_joint/transition_barrier_proxies.csv
+          echo '=== PHASE SHIFT ALIGNMENT ==='
+          cat research/primate_transition/out_joint/phase_shift_alignment.csv
+          echo '=== SUMMARY ==='
+          cat research/primate_transition/out_joint/joint_summary.json
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: primate-transition-landscape-results
-          path: research/primate_transition/out/
+          name: primate-joint-landscape-results
+          path: research/primate_transition/out_joint/
           if-no-files-found: error
