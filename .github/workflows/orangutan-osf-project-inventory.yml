@@ -1,0 +1,75 @@
+name: orangutan-osf-project-inventory
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/orangutan-osf-project-inventory.yml'
+  workflow_dispatch:
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -q requests pandas openpyxl
+      - name: Enumerate OSF project and download compact tables
+        run: |
+          python - <<'PY'
+          import requests, pathlib, json, re, pandas as pd
+          out=pathlib.Path('research/primate_transition/orangutan_osf_inventory'); raw=out/'raw'; raw.mkdir(parents=True,exist_ok=True)
+          s=requests.Session(); s.headers['User-Agent']='orangutan-hierarchy-audit/1.0'
+          node='w3ne5'
+          providers=s.get(f'https://api.osf.io/v2/nodes/{node}/files/',timeout=60); providers.raise_for_status()
+          inv=[]
+          def walk(url,prefix=''):
+              while url:
+                  r=s.get(url,timeout=60); r.raise_for_status(); j=r.json()
+                  for item in j.get('data',[]):
+                      a=item.get('attributes',{}); links=item.get('links',{}); kind=a.get('kind'); name=a.get('name','')
+                      path=prefix+'/'+name
+                      if kind=='folder':
+                          rel=item.get('relationships',{}).get('files',{}).get('links',{}).get('related',{}).get('href')
+                          if rel: walk(rel,path)
+                      else:
+                          inv.append({'path':path,'name':name,'size':a.get('size'),'download':links.get('download'),'provider':item.get('relationships',{}).get('files',{}).get('data')})
+                  url=j.get('links',{}).get('next')
+          for prov in providers.json().get('data',[]):
+              pname=prov.get('attributes',{}).get('name',prov.get('id','provider'))
+              rel=prov.get('relationships',{}).get('files',{}).get('links',{}).get('related',{}).get('href')
+              if rel: walk(rel,'/'+pname)
+          pd.DataFrame(inv).to_csv(out/'osf_inventory.csv',index=False)
+          print(pd.DataFrame(inv).to_string(index=False))
+          for x in inv:
+              n=x['name']; u=x['download']; ext=pathlib.Path(n).suffix.lower()
+              if not u or ext not in {'.csv','.tsv','.txt','.xlsx','.xls','.r','.rmd','.json'}: continue
+              safe=re.sub(r'[^A-Za-z0-9._-]+','_',x['path']).strip('_')
+              p=raw/safe
+              rr=s.get(u,timeout=120); rr.raise_for_status(); p.write_bytes(rr.content)
+              print('downloaded',x['path'],len(rr.content))
+              try:
+                  if ext in {'.xlsx','.xls'}:
+                      xl=pd.ExcelFile(p)
+                      for sh in xl.sheet_names:
+                          d=pd.read_excel(p,sheet_name=sh)
+                          print('\nTABLE',x['path'],'sheet',sh,'shape',d.shape,'cols',list(d.columns))
+                          print(d.head(8).to_string(index=False))
+                  elif ext in {'.csv','.tsv','.txt'}:
+                      sep='\t' if ext in {'.tsv','.txt'} else ','
+                      try:d=pd.read_csv(p,sep=sep)
+                      except Exception:d=pd.read_csv(p,sep=None,engine='python')
+                      print('\nTABLE',x['path'],'shape',d.shape,'cols',list(d.columns))
+                      print(d.head(8).to_string(index=False))
+              except Exception as e: print('PARSE_ERR',x['path'],repr(e))
+          PY
+      - name: Upload inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: orangutan-osf-project-inventory
+          path: research/primate_transition/orangutan_osf_inventory/
+          if-no-files-found: error
