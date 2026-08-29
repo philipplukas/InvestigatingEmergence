@@ -1,0 +1,55 @@
+name: orangutan-temporal-hierarchy-extract
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/orangutan-temporal-hierarchy-extract.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -q pandas numpy scipy openpyxl requests
+      - name: Download and inspect public OSF table
+        run: |
+          python - <<'PY'
+          import requests, pathlib, pandas as pd, json, numpy as np
+          out=pathlib.Path('research/primate_transition/orangutan_hierarchy_extract')
+          out.mkdir(parents=True,exist_ok=True)
+          url='https://osf.io/download/gdkuc/'
+          r=requests.get(url,timeout=120); r.raise_for_status()
+          p=out/'orangutan_elements.xlsx'; p.write_bytes(r.content)
+          xls=pd.ExcelFile(p)
+          inv=[]
+          for sh in xls.sheet_names:
+              df=pd.read_excel(p,sheet_name=sh)
+              safe=''.join(c if c.isalnum() else '_' for c in sh)
+              df.to_csv(out/f'{safe}.csv',index=False)
+              inv.append({'sheet':sh,'rows':len(df),'cols':len(df.columns),'columns':list(map(str,df.columns))})
+              print('\n### SHEET',sh,'shape',df.shape)
+              print('COLUMNS',list(df.columns))
+              print(df.head(15).to_string(index=False))
+              print('\nDTYPES\n',df.dtypes.to_string())
+              for c in df.columns:
+                  if df[c].dtype=='object':
+                      vals=df[c].dropna().astype(str).value_counts().head(20)
+                      print('\nVALUE COUNTS',c,'\n',vals.to_string())
+                  elif pd.api.types.is_numeric_dtype(df[c]):
+                      v=pd.to_numeric(df[c],errors='coerce').dropna()
+                      if len(v): print('NUM',c,'n',len(v),'min',v.min(),'median',v.median(),'max',v.max())
+          (out/'schema_inventory.json').write_text(json.dumps(inv,indent=2))
+          PY
+      - name: Upload extract
+        uses: actions/upload-artifact@v4
+        with:
+          name: orangutan-temporal-hierarchy-extract
+          path: research/primate_transition/orangutan_hierarchy_extract/
+          if-no-files-found: error
