@@ -22,27 +22,33 @@ jobs:
         run: python research/primate_transition/joint_landscape.py
       - name: Run blocked list-level validation
         run: python research/primate_transition/joint_landscape_cv_fast.py
+      - name: Run cross-species landscape analysis
+        run: python research/primate_transition/cross_species_landscape.py
       - name: Print joint landscape results
         run: |
           echo '=== JOINT MODEL COMPARISON ==='
           cat research/primate_transition/out_joint/joint_model_comparison.csv
           echo '=== BLOCKED CV ==='
           cat research/primate_transition/out_joint/blocked_cv_model_comparison.csv
-          echo '=== BLOCKED CV BY SUBJECT ==='
-          cat research/primate_transition/out_joint/blocked_cv_by_subject.csv
-          echo '=== STATE SPACE SUPPORT ==='
-          cat research/primate_transition/out_joint/state_space_support.csv
-          echo '=== BASIN ENERGIES ==='
-          cat research/primate_transition/out_joint/empirical_basin_energies.csv
-          echo '=== BARRIER PROXIES ==='
-          cat research/primate_transition/out_joint/transition_barrier_proxies.csv
-          echo '=== PHASE SHIFT ALIGNMENT ==='
-          cat research/primate_transition/out_joint/phase_shift_alignment.csv
-          echo '=== SUMMARY ==='
-          cat research/primate_transition/out_joint/joint_summary.json
-      - name: Upload artifacts
+          echo '=== COHORT LANDSCAPE SUMMARY ==='
+          cat research/primate_transition/out_cross_species/cohort_landscape_summary.csv
+          echo '=== CODING AUDIT ==='
+          cat research/primate_transition/out_cross_species/coding_mismatch_audit.csv
+          echo '=== CLUSTER BOOTSTRAP COMPARISONS ==='
+          cat research/primate_transition/out_cross_species/cluster_bootstrap_comparisons.csv
+          echo '=== CHILD AGE MODELS ==='
+          cat research/primate_transition/out_cross_species/child_age_models.csv
+          echo '=== CROSS SPECIES SUMMARY ==='
+          cat research/primate_transition/out_cross_species/cross_species_summary.json
+      - name: Upload joint artifacts
         uses: actions/upload-artifact@v4
         with:
           name: primate-joint-landscape-results
           path: research/primate_transition/out_joint/
+          if-no-files-found: error
+      - name: Upload cross-species artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: primate-cross-species-landscape-results
+          path: research/primate_transition/out_cross_species/
           if-no-files-found: error
