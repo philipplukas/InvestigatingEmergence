@@ -7,79 +7,118 @@ import pandas as pd
 from scipy.optimize import minimize
 from scipy.special import logsumexp
 
-from joint_landscape import DATA_URL, CATS, build_design
+from joint_landscape import DATA_URL, CATS
 
 OUT = Path("research/primate_transition/out_joint")
 OUT.mkdir(parents=True, exist_ok=True)
 EPS = 1e-12
-SPECS = [("J0_global", "global"), ("J1_subject", "subject"), ("J2_shared_phase", "shared_phase"), ("J3_subject_phase_interaction", "interaction")]
+ALPHA = 0.5
+SUBS = ["Beyonce", "Coltrane", "Horatio"]
+EXPS = [1, 2, 3]
+MODELS = ["J0_global", "J1_subject", "J2_shared_phase", "J3_subject_phase_interaction"]
 
 
-def probs(X, theta):
-    B = theta.reshape(X.shape[1], 3)
-    z = np.column_stack([X @ B, np.zeros(len(X))])
-    z -= logsumexp(z, axis=1, keepdims=True)
-    return np.exp(z)
+def make_counts(df):
+    C = np.zeros((3, 3, 4), float)
+    for si, s in enumerate(SUBS):
+        for ei, e in enumerate(EXPS):
+            g = df[(df["Sub"] == s) & (df["Exposure"] == e)]
+            C[si, ei] = [(g["Response Type"] == c).sum() for c in CATS]
+    return C
 
 
-def fit_theta(X, y):
+def additive_design():
+    # 9 subject-phase cells: intercept + two subject offsets + two shared phase offsets.
+    rows = []
+    for si in range(3):
+        for ei in range(3):
+            rows.append([1.0, float(si == 1), float(si == 2), float(ei == 1), float(ei == 2)])
+    return np.asarray(rows)
+
+
+def softmax3(z):
+    z4 = np.column_stack([z, np.zeros(len(z))])
+    z4 -= logsumexp(z4, axis=1, keepdims=True)
+    return np.exp(z4)
+
+
+def fit_additive(C):
+    X = additive_design()
+    Y = (C + ALPHA).reshape(9, 4)
     def obj(theta):
-        P = probs(X, theta)
-        nll = -np.log(np.clip(P[np.arange(len(y)), y], EPS, 1)).sum()
-        return float(nll + 1e-7 * np.dot(theta, theta))
-    res = minimize(obj, np.zeros(X.shape[1] * 3), method="L-BFGS-B", options={"maxiter": 3000, "ftol": 1e-11})
+        B = theta.reshape(5, 3)
+        P = softmax3(X @ B)
+        return float(-(Y * np.log(np.clip(P, EPS, 1))).sum() + 1e-8 * np.dot(theta, theta))
+    res = minimize(obj, np.zeros(15), method="L-BFGS-B", options={"maxiter": 1500, "ftol": 1e-12})
     if not res.success:
         raise RuntimeError(res.message)
-    return res.x
+    return softmax3(X @ res.x.reshape(5, 3)).reshape(3, 3, 4)
+
+
+def predictive_probs(C, model):
+    C = C + ALPHA
+    if model == "J0_global":
+        p = C.sum(axis=(0, 1)); p /= p.sum()
+        return np.broadcast_to(p, (3, 3, 4)).copy()
+    if model == "J1_subject":
+        p = C.sum(axis=1); p /= p.sum(axis=1, keepdims=True)
+        return np.broadcast_to(p[:, None, :], (3, 3, 4)).copy()
+    if model == "J2_shared_phase":
+        # Fit on pseudocount-smoothed cell table; fit_additive adds its own ALPHA,
+        # so subtract here to keep exactly one Jeffreys pseudocount contribution.
+        return fit_additive(C - ALPHA)
+    if model == "J3_subject_phase_interaction":
+        return C / C.sum(axis=2, keepdims=True)
+    raise ValueError(model)
 
 
 def main():
     df = pd.read_csv(DATA_URL)
     df = df[df["Response Type"].isin(CATS)].copy()
     df["Sub"] = df["Sub"].astype(str).str.strip().str.casefold().str.title()
-    df = df[df["Sub"].isin(["Beyonce", "Coltrane", "Horatio"])].copy()
+    df = df[df["Sub"].isin(SUBS)].copy()
     df["Exposure"] = df["Exposure"].astype(int)
-    ids = {c: i for i, c in enumerate(CATS)}
-    y = df["Response Type"].map(ids).to_numpy(int)
+    df["block"] = df["Sub"] + "|E" + df["Exposure"].astype(str) + "|L" + df["List"].astype(str)
+    groups = pd.unique(df["block"])
 
-    # A list is the natural experimental block. Include subject and exposure to avoid accidental ID collisions.
-    group = df["Sub"].astype(str) + "|E" + df["Exposure"].astype(str) + "|L" + df["List"].astype(str)
-    groups = pd.unique(group)
-    rows = []
+    full = make_counts(df)
     per_fold = []
-    for model, mode in SPECS:
-        total_ll = 0.0
-        total_n = 0
-        fold_losses = []
-        for g in groups:
-            test = (group.to_numpy() == g)
-            train = ~test
-            Xtr, _ = build_design(df.loc[train], mode)
-            Xte, _ = build_design(df.loc[test], mode)
-            theta = fit_theta(Xtr, y[train])
-            P = probs(Xte, theta)
-            ll = float(np.log(np.clip(P[np.arange(test.sum()), y[test]], EPS, 1)).sum())
-            total_ll += ll
-            total_n += int(test.sum())
-            loss = -ll / max(int(test.sum()), 1)
-            fold_losses.append(loss)
-            per_fold.append({"model": model, "block": g, "n": int(test.sum()), "log_loss": loss})
-        rows.append({"model": model, "n_blocks": len(groups), "n_test_predictions": total_n,
-                     "loo_log_likelihood": total_ll, "loo_log_loss_per_trial": -total_ll / total_n,
-                     "median_block_log_loss": float(np.median(fold_losses)),
-                     "q90_block_log_loss": float(np.quantile(fold_losses, .90))})
+    totals = {m: {"ll": 0.0, "n": 0, "losses": []} for m in MODELS}
 
+    for block in groups:
+        test_df = df[df["block"] == block]
+        si = SUBS.index(test_df["Sub"].iloc[0]); ei = EXPS.index(int(test_df["Exposure"].iloc[0]))
+        test_counts = np.array([(test_df["Response Type"] == c).sum() for c in CATS], float)
+        train = full.copy(); train[si, ei] -= test_counts
+        for model in MODELS:
+            P = predictive_probs(train, model)
+            p = np.clip(P[si, ei], EPS, 1)
+            ll = float((test_counts * np.log(p)).sum())
+            n = int(test_counts.sum())
+            loss = -ll / max(n, 1)
+            totals[model]["ll"] += ll; totals[model]["n"] += n; totals[model]["losses"].append(loss)
+            per_fold.append({"model": model, "block": block, "Sub": SUBS[si], "Exposure": EXPS[ei],
+                             "n": n, "log_loss": loss})
+
+    rows = []
+    for model in MODELS:
+        t = totals[model]
+        rows.append({"model": model, "n_blocks": len(groups), "n_test_predictions": t["n"],
+                     "loo_log_likelihood": t["ll"], "loo_log_loss_per_trial": -t["ll"] / t["n"],
+                     "median_block_log_loss": float(np.median(t["losses"])),
+                     "q90_block_log_loss": float(np.quantile(t["losses"], .90))})
     out = pd.DataFrame(rows).sort_values("loo_log_loss_per_trial")
     out["delta_log_loss"] = out["loo_log_loss_per_trial"] - out["loo_log_loss_per_trial"].min()
     out.to_csv(OUT / "blocked_cv_model_comparison.csv", index=False)
-    pd.DataFrame(per_fold).to_csv(OUT / "blocked_cv_per_list.csv", index=False)
 
-    # Subject-specific predictive summary to reveal whether one animal drives model differences.
     pf = pd.DataFrame(per_fold)
-    pf[["Sub", "Exposure", "List"]] = pf["block"].str.extract(r"^([^|]+)\|E([^|]+)\|L(.+)$")
-    subject_summary = pf.groupby(["model", "Sub"], as_index=False).apply(
-        lambda g: pd.Series({"mean_block_log_loss": np.average(g["log_loss"], weights=g["n"]),
-                             "n_predictions": int(g["n"].sum())}), include_groups=False)
+    pf.to_csv(OUT / "blocked_cv_per_list.csv", index=False)
+    subj_rows = []
+    for (model, sub), g in pf.groupby(["model", "Sub"]):
+        subj_rows.append({"model": model, "Sub": sub,
+                          "mean_block_log_loss": float(np.average(g["log_loss"], weights=g["n"])),
+                          "n_predictions": int(g["n"].sum())})
+    subject_summary = pd.DataFrame(subj_rows)
     subject_summary.to_csv(OUT / "blocked_cv_by_subject.csv", index=False)
 
     print("=== BLOCKED LIST-LEVEL CV ===")
