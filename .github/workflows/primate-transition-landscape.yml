@@ -4,6 +4,7 @@ on:
     branches: [primate-transition-landscape]
     paths:
       - 'research/primate_transition/**'
+      - 'research/primate_comparative_cost/**'
       - '.github/workflows/primate-transition-landscape.yml'
   workflow_dispatch:
 
@@ -17,7 +18,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: python -m pip install --upgrade pip pandas numpy scipy
+        run: python -m pip install --upgrade pip pandas numpy scipy openpyxl requests
       - name: Run joint landscape analysis
         run: python research/primate_transition/joint_landscape.py
       - name: Run blocked list-level validation
@@ -28,6 +29,8 @@ jobs:
         run: python research/primate_transition/audit_published_subset.py
       - name: Run published two-coordinate test
         run: python research/primate_transition/published_two_coordinate.py
+      - name: Run comparative cost atlas
+        run: python research/primate_comparative_cost/discover_and_analyze.py
       - name: Print decisive results
         run: |
           echo '=== PUBLISHED TWO COORDINATE ==='
@@ -36,8 +39,10 @@ jobs:
           cat research/primate_transition/out_published/published_pairwise_tests.csv
           echo '=== CHILD AGE PERMUTATION TESTS ==='
           cat research/primate_transition/out_published/child_age_permutation_tests.csv
-          echo '=== VERDICT ==='
-          cat research/primate_transition/out_published/published_two_coordinate_verdict.json
+          echo '=== COMPARATIVE COST LEDGER ==='
+          cat research/primate_comparative_cost/out/comparative_cost_ledger_v1.csv
+          echo '=== COMPARATIVE DISCOVERY ==='
+          cat research/primate_comparative_cost/out/discovery.json
       - name: Upload published analysis
         uses: actions/upload-artifact@v4
         with:
@@ -55,4 +60,10 @@ jobs:
         with:
           name: primate-cross-species-landscape-results
           path: research/primate_transition/out_cross_species/
+          if-no-files-found: error
+      - name: Upload comparative cost atlas
+        uses: actions/upload-artifact@v4
+        with:
+          name: primate-comparative-cost-atlas
+          path: research/primate_comparative_cost/out/
           if-no-files-found: error
