@@ -1,0 +1,159 @@
+name: chimp-semantic-structure-integration
+
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths:
+      - '.github/workflows/chimp-semantic-structure-integration.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pandas numpy openpyxl python-docx requests
+      - name: Download public data and audit overlap
+        run: |
+          python - <<'PY'
+          import io, json, re, zipfile
+          from pathlib import Path
+          import pandas as pd, numpy as np, requests
+          from docx import Document
+
+          out=Path('research/primate_transition/chimp_semantic_structure_integration')
+          out.mkdir(parents=True,exist_ok=True)
+          s=requests.Session(); s.headers.update({'User-Agent':'chimp-integration-audit/1.0'})
+
+          urls={
+            'supp1':'https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM4_ESM.docx',
+            'supp2':'https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM5_ESM.xlsx',
+            'meaning':'https://raw.githubusercontent.com/tozbu/Chimpanzee_bigram_meaning/main/calldata.csv',
+          }
+          paths={}
+          for k,u in urls.items():
+            ext={'supp1':'.docx','supp2':'.xlsx','meaning':'.csv'}[k]
+            p=out/(k+ext)
+            r=s.get(u,timeout=120); r.raise_for_status(); p.write_bytes(r.content); paths[k]=p
+            print(k,len(r.content),p)
+
+          # 2025 meaning data
+          m=pd.read_csv(paths['meaning'])
+          m['call.name']=m['call.name'].astype(str).str.strip()
+          m.to_csv(out/'meaning_2025_calldata.csv',index=False)
+          meaning_bigrams=sorted(m.loc[pd.to_numeric(m['combi.length'],errors='coerce').eq(2),'call.name'].unique())
+          meaning16=['GR_BK','GR_HO','GR_PG','GR_PN','HO_GR','HO_PG','HO_PH','HO_PN','PG_GR','PG_PN','PH_HO','PH_PB','PH_PG','PH_PS','PH_SC','PN_PG']
+          pd.DataFrame({'bigram':meaning16,'n_tokens_2025':[int((m['call.name']==b).sum()) for b in meaning16],
+                        'n_callers_2025':[int(m.loc[m['call.name']==b,'caller'].nunique()) for b in meaning16]}).to_csv(out/'meaning16_token_counts.csv',index=False)
+
+          # Supplement 2 workbook inventory and exports
+          xls=pd.ExcelFile(paths['supp2'])
+          inv=[]
+          all_text=[]
+          for si,sheet in enumerate(xls.sheet_names):
+            df=pd.read_excel(paths['supp2'],sheet_name=sheet,header=None)
+            inv.append({'sheet':sheet,'rows':df.shape[0],'cols':df.shape[1]})
+            clean=re.sub(r'[^A-Za-z0-9_-]+','_',sheet)[:60]
+            df.to_csv(out/f'supp2_sheet_{si:02d}_{clean}.csv',index=False,header=False)
+            for i,row in df.iterrows():
+              vals=[str(x) for x in row.tolist() if pd.notna(x)]
+              if vals: all_text.append({'sheet':sheet,'row':int(i),'text':' | '.join(vals)})
+          pd.DataFrame(inv).to_csv(out/'supp2_inventory.csv',index=False)
+          textdf=pd.DataFrame(all_text)
+          textdf.to_csv(out/'supp2_all_rows_text.csv',index=False)
+
+          # Supplement 1 docx text/tables
+          doc=Document(paths['supp1'])
+          paras=[p.text for p in doc.paragraphs if p.text.strip()]
+          (out/'supp1_paragraphs.txt').write_text('\n'.join(paras))
+          tables=[]
+          for ti,t in enumerate(doc.tables):
+            rows=[]
+            for r in t.rows:
+              rows.append([c.text for c in r.cells])
+            width=max(map(len,rows)) if rows else 0
+            norm=[r+['']*(width-len(r)) for r in rows]
+            pd.DataFrame(norm).to_csv(out/f'supp1_table_{ti:02d}.csv',index=False,header=False)
+            tables.append({'table':ti,'rows':len(rows),'cols':width})
+          pd.DataFrame(tables).to_csv(out/'supp1_table_inventory.csv',index=False)
+
+          # Pattern extraction from all public supplement text.
+          # Call codes in this literature are uppercase 2-letter symbols joined by underscores.
+          pat=re.compile(r'(?<![A-Z])(?:BK|GR|HO|NV|PB|PG|PH|PN|PR|PS|SC|WH)(?:_(?:BK|GR|HO|NV|PB|PG|PH|PN|PR|PS|SC|WH)){1,9}(?![A-Z])')
+          candidates=[]
+          for rec in all_text:
+            for x in pat.findall(rec['text'].upper()): candidates.append((x,'xlsx',rec['sheet'],rec['row']))
+          for pi,p in enumerate(paras):
+            for x in pat.findall(p.upper()): candidates.append((x,'docx','paragraph',pi))
+          pc=pd.DataFrame(candidates,columns=['sequence','source','location','row'])
+          if len(pc):
+            pc['length']=pc.sequence.str.count('_')+1
+            pc.to_csv(out/'public_supplement_sequence_mentions.csv',index=False)
+          else:
+            pc=pd.DataFrame(columns=['sequence','source','location','row','length'])
+            pc.to_csv(out/'public_supplement_sequence_mentions.csv',index=False)
+
+          # Construct structural embedding evidence from any explicit sequence strings found.
+          seqs=sorted(set(pc.sequence)) if len(pc) else []
+          rows=[]
+          for b in meaning16:
+            toks=b.split('_')
+            embedded=[]
+            head=[]; tail=[]
+            for seq in seqs:
+              st=seq.split('_')
+              for j in range(len(st)-1):
+                if st[j:j+2]==toks and len(st)>=3:
+                  embedded.append(seq)
+                  if j==0: head.append(seq)
+                  if j==len(st)-2: tail.append(seq)
+            rows.append({'bigram':b,'explicit_in_public_supplement':b in seqs,
+                         'n_distinct_longer_sequences_explicit':len(set(embedded)),
+                         'n_head_embeddings':len(set(head)),'n_tail_embeddings':len(set(tail)),
+                         'example_longer_sequences':';'.join(sorted(set(embedded))[:20])})
+          overlap=pd.DataFrame(rows)
+          overlap.to_csv(out/'meaning_bigram_structural_embedding_public_mentions.csv',index=False)
+
+          # Look for 2022 aggregate tables that encode bigram/trigram rows even if strings were split across cells.
+          keywords=['bigram','trigram','head','tail','above chance','frequency','recombination']
+          hits=[]
+          for rec in all_text:
+            low=rec['text'].lower()
+            if any(k in low for k in keywords): hits.append(rec)
+          pd.DataFrame(hits).to_csv(out/'supp2_structural_keyword_rows.csv',index=False)
+
+          # Call-label overlap independent of explicit embedding availability.
+          call_codes_2025=sorted({x for b in meaning16 for x in b.split('_')})
+          seq_codes_2022=sorted({x for seq in seqs for x in seq.split('_')})
+          summary={
+            'meaning_rows_2025':int(len(m)),
+            'meaning_callers_2025':int(m.caller.nunique()),
+            'meaning_bigrams_in_paper':len(meaning16),
+            'supp2_sheets':xls.sheet_names,
+            'supp1_paragraphs':len(paras),
+            'supp1_tables':len(doc.tables),
+            'explicit_sequence_strings_extracted_from_public_supplements':len(seqs),
+            'meaning16_with_explicit_longer_embedding_in_public_supplement':int((overlap.n_distinct_longer_sequences_explicit>0).sum()),
+            'meaning16_with_explicit_public_2022_mention':int(overlap.explicit_in_public_supplement.sum()),
+            'call_code_overlap':sorted(set(call_codes_2025)&set(seq_codes_2022)),
+            'exact_same_individual_linkage_possible_from_2022_public_data':False,
+            'reason_individual_linkage':'2022 source data are available only on request; public supplements/figure data do not expose the full caller-level 4,826-row corpus.',
+          }
+          (out/'audit_summary.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          print('\n=== WORKBOOK INVENTORY ===')
+          print(pd.DataFrame(inv).to_string(index=False))
+          print('\n=== OVERLAP ===')
+          print(overlap.to_string(index=False))
+          PY
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: chimp-semantic-structure-integration
+          path: research/primate_transition/chimp_semantic_structure_integration/
+          if-no-files-found: error
