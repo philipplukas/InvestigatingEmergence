@@ -1,0 +1,80 @@
+name: chimp-figshare-bridge-audit
+on:
+  push:
+    paths:
+      - '.github/workflows/chimp-figshare-bridge-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q pandas openpyxl requests tabulate
+      - name: Audit Figshare release and bridge keys
+        run: |
+          python - <<'PY'
+          import os, json, re, io, zipfile, requests, pandas as pd
+          out='research/primate_transition/chimp_figshare_bridge'; os.makedirs(out,exist_ok=True)
+          api='https://api.figshare.com/v2/articles/19336853'
+          meta=requests.get(api,timeout=30); meta.raise_for_status(); meta=meta.json()
+          open(out+'/figshare_metadata.json','w').write(json.dumps(meta,indent=2))
+          files=[]; target_hits=[]; schemas=[]
+          targets=['HO_PH_GR','PH_HO_GR','HO_PH_PG','PH_HO_PG','HO_PH_PN','PH_HO_PN']
+          for f in meta.get('files',[]):
+              rec={'id':f.get('id'),'name':f.get('name'),'size':f.get('size'),'download_url':f.get('download_url')}; files.append(rec)
+              data=requests.get(f['download_url'],timeout=60).content
+              path='/tmp/'+re.sub(r'[^A-Za-z0-9_.-]','_',f['name']); open(path,'wb').write(data)
+              def inspect_df(df,source,sheet=''):
+                  cols=[str(c) for c in df.columns]
+                  schemas.append({'source':source,'sheet':sheet,'n_rows':len(df),'columns':'|'.join(cols)})
+                  txt=df.astype(str).apply(lambda x:' '.join(x),axis=1)
+                  for t in targets:
+                      m=txt.str.contains(t,regex=False,na=False)
+                      for idx in df.index[m][:20]:
+                          row={str(k):str(v) for k,v in df.loc[idx].to_dict().items()}
+                          target_hits.append({'target':t,'source':source,'sheet':sheet,'row_index':int(idx) if isinstance(idx,(int,float)) else str(idx),'row':row})
+              low=f['name'].lower()
+              try:
+                  if low.endswith('.csv') or low.endswith('.txt') or low.endswith('.tsv'):
+                      sep='\t' if low.endswith('.tsv') else ','
+                      try: inspect_df(pd.read_csv(path,sep=sep),f['name'])
+                      except Exception:
+                          try: inspect_df(pd.read_csv(path,sep=None,engine='python'),f['name'])
+                          except Exception: pass
+                  elif low.endswith(('.xlsx','.xls')):
+                      xl=pd.ExcelFile(path)
+                      for sh in xl.sheet_names: inspect_df(pd.read_excel(path,sheet_name=sh),f['name'],sh)
+                  elif low.endswith('.zip'):
+                      with zipfile.ZipFile(path) as z:
+                          for nm in z.namelist():
+                              if nm.lower().endswith('.csv'):
+                                  inspect_df(pd.read_csv(z.open(nm)),f['name']+'::'+nm)
+              except Exception as e:
+                  schemas.append({'source':f['name'],'sheet':'ERROR','n_rows':-1,'columns':repr(e)})
+          pd.DataFrame(files).to_csv(out+'/figshare_files.csv',index=False)
+          pd.DataFrame(schemas).to_csv(out+'/file_schemas.csv',index=False)
+          pd.DataFrame(target_hits).to_json(out+'/exact_target_hits.json',orient='records',indent=2)
+          # Search bridge-like columns
+          bridge_terms=['date','day','time','caller','id','individual','file','record','audio','wav','context','event','sequence','utterance','call']
+          bridge=[]
+          for s in schemas:
+              cols=s['columns'].split('|')
+              found=[c for c in cols if any(t in c.lower() for t in bridge_terms)]
+              if found: bridge.append({**s,'bridge_columns':'|'.join(found)})
+          pd.DataFrame(bridge).to_csv(out+'/bridge_columns.csv',index=False)
+          summary={'article_title':meta.get('title'),'n_files':len(files),'files':files,'n_schemas':len(schemas),'n_exact_target_hits':len(target_hits),'bridge_schemas':bridge}
+          open(out+'/summary.json','w').write(json.dumps(summary,indent=2))
+          with open(out+'/RESULT.md','w') as fh:
+              fh.write('# Figshare structural-semantic bridge audit\n\n')
+              fh.write(f"Files: {len(files)}; schemas: {len(schemas)}; exact candidate hits: {len(target_hits)}.\n\n")
+              if bridge: fh.write(pd.DataFrame(bridge).to_markdown(index=False))
+          print(json.dumps(summary,indent=2))
+          print('TARGET_HITS',json.dumps(target_hits[:20],indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimp-figshare-bridge-audit
+          path: research/primate_transition/chimp_figshare_bridge/
