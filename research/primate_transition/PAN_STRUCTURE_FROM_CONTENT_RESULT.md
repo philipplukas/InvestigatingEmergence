@@ -1,84 +1,82 @@
 # Wild Pan structure-from-content result
 
-## Search target
+## Updated identification target
 
-Find existing chimpanzee or bonobo evidence where the same semantic/call material occurs under different structural organization, ideally approaching a bracket-sensitive contrast such as `[AB]C` versus `A[BC]`.
+The current natural target is semantic order under embedding, not hierarchy simpliciter. For the semantically order-sensitive chimpanzee pair `HO_PH <-> PH_HO`, the 2022 adult structural supplement contains both orientations inside longer sequences and, importantly, matched continuation environments.
 
-## Chimpanzee reversed bigrams
+## Matched embedded environments
 
-The 2025 Taï meaning dataset contains four call-pair reversals:
+Across the adult exact-sequence inventory, `HO_PH` and `PH_HO` share following-call environments:
 
-- `GR_HO` vs `HO_GR`
-- `GR_PG` vs `PG_GR`
-- `HO_PH` vs `PH_HO`
-- `PG_PN` vs `PN_PG`
+- `GR`
+- `PG`
+- `PN`
 
-The paper identifies clear semantic/event-distribution ordering effects for:
+Thus exact structural counterparts of `HO_PH_X` and `PH_HO_X` exist for three matched `X` values.
 
-- `GR_HO <-> HO_GR`
-- `HO_PH <-> PH_HO`
+The pair also shares preceding-call environments `GR`, `PB`, `PS`, and `WH`.
 
-A direct reanalysis of the public 2025 context table gives Jensen-Shannon context divergences:
+For the structurally stronger pair `GR_PG <-> PG_GR`, shared following-call environments are `BK`, `HO`, `PB`, `PH`, `PN`, and `SC`, with shared predecessors `HO`, `PB`, `PH`, and `PN`.
 
-- `GR_HO <-> HO_GR`: 0.1588 bits
-- `GR_PG <-> PG_GR`: 0.0951 bits
-- `HO_PH <-> PH_HO`: 0.1613 bits
-- `PG_PN <-> PN_PG`: 0.1258 bits
+Therefore the structural matching problem is solved at the sequence-type level.
 
-## Cross-check against 2022 trigram embedding
+## 2025 standalone semantic data
 
-Robust frequent bigrams embedded within trigrams in the 2022 structural study include:
+The public repository `tozbu/Chimpanzee_bigram_meaning` contains 4,322 raw rows with columns `date`, `caller`, `call.name`, `combi.length`, `context`, `context.length`, and `demosubset`. It covers standalone single calls and bigrams, not the longer embedded sequences.
 
-`GR_PG, HO_PH, PH_PB, PG_GR, PH_PS, PG_PB, PB_PH, PG_PN, PB_PS, PS_SC, SC_PS, PB_BK, PS_PB`.
+For the two candidate pairs, direct event-token reanalysis gives:
 
-Crossing the two studies gives:
+- `HO_PH`: 136 utterances, 41 callers, 194 event tokens.
+- `PH_HO`: 23 utterances, 19 callers, 35 event tokens.
+- `GR_PG`: 124 utterances, 38 callers, 188 event tokens.
+- `PG_GR`: 27 utterances, 19 callers, 52 event tokens.
 
-- `HO_PH <-> PH_HO`: clear semantic order effect, but only `HO_PH` is in the robust embedded set.
-- `GR_HO <-> HO_GR`: clear semantic order effect, but neither orientation is in the robust embedded set.
-- `GR_PG <-> PG_GR`: both orientations are robustly embedded, but this pair was not one of the two clear semantic order-effect pairs.
-- `PG_PN <-> PN_PG`: only `PG_PN` robustly embedded; no clear semantic order effect.
+Standalone semantic divergence:
 
-Therefore:
+- `HO_PH <-> PH_HO`: JS = 0.161311 bits; TV = 0.330486.
+- `GR_PG <-> PG_GR`: JS = 0.095108 bits; TV = 0.218085.
 
-`N(clear order-effect pairs AND both orientations robustly embedded) = 0`.
+## Public-data audit
 
-## Bonobo same-multiset playback controls
+The 2022 public supplement contains rich exact sequence inventories, but no occurrence-level `context`, `event`, `caller`, or `date` fields that could link an exact embedded sequence occurrence to a semantic label.
 
-The 2011 bonobo food-playback table contains several natural same-multiset/different-order four-call stimuli:
+The 2025 public raw file contains `date`, `caller`, and `context`, but only for standalone single calls and bigrams. Its analysis code explicitly models those standalone calls and splits dyadic calls only into `call1` and `call2`; there is no hidden third-call or longer-sequence field.
 
-- `P P PY P` vs `PY P P P`: both produced to kiwi.
-- `Y P Y Y` vs `Y Y Y P`: both produced to apple.
-- `PY PY Y Y` vs `PY Y PY Y`: both produced to apple.
+A repository-history audit found no earlier richer version of `calldata.csv`, and public code search for exact matched trigram strings did not expose an alternative row-level semantic table.
 
-These are descriptive rather than experimentally controlled permutation tests, but they show that coarse food-of-production labels can remain stable under reordering for some four-call sequences.
+## Partial-identification result
 
-## Other wild Pan evidence
+For a matched continuation `X`, define
 
-- 2023 chimpanzee `alarm-huu + waa-bark` playback establishes compositional-like processing of an artificial combination versus its components, but the paper explicitly proposes reversal as future work; no reversal condition was included.
-- 2022 chimpanzee greeting-hoots show population-specific `PH+PG` versus `PG+PH` ordering, but no receiver-semantic playback contrast.
-- 2021 wild bonobo gesture work reports no effect of sequence presence/position on gesture meaning; situational context did matter.
-- 2025 bonobo vocal compositionality establishes restricted and nontrivial two-call composition, but no >=3-unit bracket contrast.
+`Gamma_X = D(P(Y | HO_PH_X), P(Y | PH_HO_X))`.
 
-## Identification ladder
+Without an occurrence-level join between the structural sequence and event label, the two embedded context distributions are unrestricted points of the 22-event simplex under a nonparametric model.
 
-- Same components in different orders: **SUPPORTED**.
-- Order-sensitive semantics at bigram level: **SUPPORTED**.
-- Structural embedding of bigrams into trigrams: **SUPPORTED**.
-- Semantically order-sensitive bigram embedded in at least one orientation: **SUPPORTED** (`HO_PH`).
-- Both orientations of a semantically order-sensitive pair robustly embedded: **NOT ESTABLISHED**.
-- Meaning of embedded `AB` preserved/transformed inside `ABC`: **UNIDENTIFIED**.
-- Bracket-sensitive contrast `[AB]C` vs `A[BC]`: **UNRESOLVED**.
+Hence the identified set is the full product simplex, giving only trivial bounds:
 
-## Closest natural target
+- TV(`P1`,`P2`) in `[0,1]`
+- JS_bits(`P1`,`P2`) in `[0,1]`
 
-`HO_PH` is the strongest existing candidate because:
+for every matched embedded environment.
 
-1. `HO_PH` and `PH_HO` have a clear order-associated semantic/context difference;
-2. `HO_PH` is robustly reused inside trigrams (`HO_PH_HO`, `HO_PH_PB`, `HO_PH_PS` among high-support examples);
-3. the missing datum is the context/meaning distribution of `HO_PH_X` and ideally matched `PH_HO_X` sequences.
+So the public data are sufficient to establish:
 
-A secondary target is `GR_PG <-> PG_GR`, because both orientations are robustly embedded, although no clear bigram-level semantic order effect was identified in 2025.
+- standalone semantic order effects;
+- bidirectional occurrence-level embedding;
+- existence of matched `ABX` / `BAX` structural environments;
+
+but not semantic preservation or transformation under embedding.
+
+## Updated identification ladder
+
+- `E0`: `AB` and `BA` occur standalone — **SUPPORTED**.
+- `E1`: both orientations occur embedded — **SUPPORTED at occurrence level**.
+- `E2`: matched `ABX` and `BAX` structural environments exist — **SUPPORTED**.
+- `E3`: standalone `AB` and `BA` differ semantically — **SUPPORTED for `HO_PH <-> PH_HO`**.
+- `E4`: event/context labels available for matched embedded occurrences — **MISSING PUBLICLY**.
+- `E5`: semantic value survives/transforms embedding — **UNIDENTIFIED**.
+- `E6`: bracket-sensitive `[AB]C` vs `A[BC]` meaning — **UNRESOLVED**.
 
 ## Frozen verdict
 
-`PAN_LINEAR_STRUCTURE_FROM_CONTENT_SUPPORTED__ORDER_SENSITIVE_SEMANTICS_SUPPORTED__STRUCTURAL_EMBEDDING_SUPPORTED__ORDER_SENSITIVE_BIDIRECTIONAL_EMBEDDING_NOT_ESTABLISHED__BRACKET_SENSITIVE_SEMANTICS_UNRESOLVED`
+`STANDALONE_SEMANTIC_ORDER_EFFECT_QUANTIFIED__BIDIRECTIONAL_EMBEDDING_OCCURRENCE_LEVEL_SUPPORTED__MATCHED_EMBEDDED_STRUCTURES_EXIST__PUBLIC_OCCURRENCE_CONTEXT_JOIN_ABSENT__EMBEDDED_SEMANTIC_EFFECT_HAS_ONLY_TRIVIAL_NONPARAMETRIC_BOUNDS__BRACKET_SENSITIVE_SEMANTICS_UNRESOLVED`
