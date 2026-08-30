@@ -1,0 +1,87 @@
+name: chimp-concomitant-bridge-audit
+on:
+  push:
+    paths:
+      - '.github/workflows/chimp-concomitant-bridge-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q pandas openpyxl xlrd requests tabulate scipy
+      - name: Audit utterance-level bridge
+        run: |
+          python - <<'PY'
+          import os,json,re,zipfile,requests,pandas as pd,numpy as np
+          out='research/primate_transition/chimp_concomitant_bridge'; os.makedirs(out,exist_ok=True)
+          meta=requests.get('https://api.figshare.com/v2/articles/22214188',timeout=30).json()
+          open(out+'/figshare_metadata.json','w').write(json.dumps(meta,indent=2))
+          targets=['HO_PH_GR','PH_HO_GR','HO_PH_PG','PH_HO_PG','HO_PH_PN','PH_HO_PN']
+          target_pairs=[('HO_PH','PH_HO',['GR','PG','PN']),('GR_PG','PG_GR',['BK','HO','PB','PH','PN','SC'])]
+          schemas=[]; hits=[]; files=[]; dfs=[]
+          def inspect(df,source,sheet=''):
+              df=df.copy(); cols=[str(c) for c in df.columns]
+              schemas.append({'source':source,'sheet':sheet,'n_rows':len(df),'columns':'|'.join(cols)})
+              dfs.append((source,sheet,df))
+              rowtxt=df.astype(str).agg(' '.join,axis=1)
+              for t in targets:
+                  m=rowtxt.str.contains(t,regex=False,na=False)
+                  for idx in df.index[m]: hits.append({'target':t,'source':source,'sheet':sheet,'row_index':str(idx),'row':{str(k):str(v) for k,v in df.loc[idx].to_dict().items()}})
+          for f in meta.get('files',[]):
+              files.append({k:f.get(k) for k in ['id','name','size','download_url']})
+              b=requests.get(f['download_url'],timeout=60).content; p='/tmp/'+re.sub(r'[^A-Za-z0-9_.-]','_',f['name']); open(p,'wb').write(b)
+              low=f['name'].lower()
+              try:
+                  if low.endswith('.csv'): inspect(pd.read_csv(p),f['name'])
+                  elif low.endswith('.tsv'): inspect(pd.read_csv(p,sep='\t'),f['name'])
+                  elif low.endswith(('.xlsx','.xls')):
+                      xl=pd.ExcelFile(p)
+                      for sh in xl.sheet_names: inspect(pd.read_excel(p,sheet_name=sh),f['name'],sh)
+                  elif low.endswith('.zip'):
+                      with zipfile.ZipFile(p) as z:
+                          for nm in z.namelist():
+                              ll=nm.lower()
+                              try:
+                                  if ll.endswith('.csv'): inspect(pd.read_csv(z.open(nm)),f['name']+'::'+nm)
+                                  elif ll.endswith('.tsv'): inspect(pd.read_csv(z.open(nm),sep='\t'),f['name']+'::'+nm)
+                              except: pass
+              except Exception as e: schemas.append({'source':f['name'],'sheet':'ERROR','n_rows':-1,'columns':repr(e)})
+          pd.DataFrame(files).to_csv(out+'/figshare_files.csv',index=False)
+          pd.DataFrame(schemas).to_csv(out+'/schemas.csv',index=False)
+          open(out+'/exact_target_hits.json','w').write(json.dumps(hits,indent=2))
+          bridge_terms=['utter','call','sequence','combi','context','event','caller','id','date','day','time','season','file','record','audio','wav']
+          bridges=[]
+          for s in schemas:
+              found=[c for c in s['columns'].split('|') if any(t in c.lower() for t in bridge_terms)]
+              if found: bridges.append({**s,'bridge_columns':'|'.join(found)})
+          pd.DataFrame(bridges).to_csv(out+'/bridge_columns.csv',index=False)
+          # candidate-row discovery using component substrings, independent of exact delimiter conventions
+          cand=[]
+          for source,sheet,df in dfs:
+              txt=df.astype(str).agg(' '.join,axis=1)
+              for a,b,xs in target_pairs:
+                  for orient in [a,b]:
+                      toks=orient.split('_')
+                      for x in xs:
+                          # require all three call codes in row, then preserve raw row for manual/next-stage parsing
+                          m=np.ones(len(df),dtype=bool)
+                          for tok in toks+[x]: m &= txt.str.contains(tok,regex=False,na=False).to_numpy()
+                          for idx in df.index[m][:200]: cand.append({'pair':a+'<->'+b,'orientation':orient,'X':x,'source':source,'sheet':sheet,'row_index':str(idx),'row':{str(k):str(v) for k,v in df.loc[idx].to_dict().items()}})
+          open(out+'/component_candidate_rows.json','w').write(json.dumps(cand,indent=2))
+          summary={'title':meta.get('title'),'n_files':len(files),'n_schemas':len(schemas),'n_exact_target_hits':len(hits),'n_component_candidate_rows':len(cand),'bridge_schemas':bridges}
+          open(out+'/summary.json','w').write(json.dumps(summary,indent=2))
+          with open(out+'/RESULT.md','w') as f:
+              f.write('# Concomitant-events bridge audit\n\n')
+              f.write(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          print('EXACT_HITS',json.dumps(hits[:50],indent=2))
+          print('CANDIDATES',json.dumps(cand[:50],indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimp-concomitant-bridge-audit
+          path: research/primate_transition/chimp_concomitant_bridge/
