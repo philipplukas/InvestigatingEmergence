@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -q pandas openpyxl requests tabulate
+      - run: pip install -q pandas openpyxl xlrd requests tabulate
       - name: Audit Figshare release and bridge keys
         run: |
           python - <<'PY'
@@ -33,7 +33,7 @@ jobs:
                   txt=df.astype(str).apply(lambda x:' '.join(x),axis=1)
                   for t in targets:
                       m=txt.str.contains(t,regex=False,na=False)
-                      for idx in df.index[m][:20]:
+                      for idx in df.index[m][:50]:
                           row={str(k):str(v) for k,v in df.loc[idx].to_dict().items()}
                           target_hits.append({'target':t,'source':source,'sheet':sheet,'row_index':int(idx) if isinstance(idx,(int,float)) else str(idx),'row':row})
               low=f['name'].lower()
@@ -57,8 +57,7 @@ jobs:
           pd.DataFrame(files).to_csv(out+'/figshare_files.csv',index=False)
           pd.DataFrame(schemas).to_csv(out+'/file_schemas.csv',index=False)
           pd.DataFrame(target_hits).to_json(out+'/exact_target_hits.json',orient='records',indent=2)
-          # Search bridge-like columns
-          bridge_terms=['date','day','time','caller','id','individual','file','record','audio','wav','context','event','sequence','utterance','call']
+          bridge_terms=['date','day','time','caller','id','individual','file','record','audio','wav','context','event','sequence','utterance','call','name']
           bridge=[]
           for s in schemas:
               cols=s['columns'].split('|')
@@ -72,7 +71,7 @@ jobs:
               fh.write(f"Files: {len(files)}; schemas: {len(schemas)}; exact candidate hits: {len(target_hits)}.\n\n")
               if bridge: fh.write(pd.DataFrame(bridge).to_markdown(index=False))
           print(json.dumps(summary,indent=2))
-          print('TARGET_HITS',json.dumps(target_hits[:20],indent=2))
+          print('TARGET_HITS',json.dumps(target_hits[:50],indent=2))
           PY
       - uses: actions/upload-artifact@v4
         with:
