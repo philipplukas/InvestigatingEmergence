@@ -1,0 +1,90 @@
+name: Pan trigram context reconstruction
+on:
+  push:
+    branches: [primate-transition-landscape]
+    paths: ['.github/workflows/pan-trigram-context-reconstruct.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and inspect overlapping public Figshare datasets
+        run: |
+          python - <<'PY'
+          import requests, json, os, zipfile, pathlib, re, shutil
+          root=pathlib.Path('out'); root.mkdir()
+          ids=[22214188,19336853]
+          manifest=[]
+          for aid in ids:
+              meta=requests.get(f'https://api.figshare.com/v2/articles/{aid}',timeout=60).json()
+              (root/f'metadata_{aid}.json').write_text(json.dumps(meta,indent=2))
+              d=root/str(aid); d.mkdir()
+              for f in meta.get('files',[]):
+                  u=f['download_url']; name=f['name']; p=d/name
+                  r=requests.get(u,timeout=120); r.raise_for_status(); p.write_bytes(r.content)
+                  manifest.append({'article':aid,'file':name,'size':len(r.content),'path':str(p)})
+          (root/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Search all tabular/text files for candidate sequences and join keys
+        run: |
+          python - <<'PY'
+          import pathlib, pandas as pd, json, re, zipfile, os
+          root=pathlib.Path('out')
+          pats=['HO_PH','PH_HO','GR_PG','PG_GR']
+          hits=[]; schemas=[]
+          def scan_df(df,src,sheet=''):
+              schemas.append({'source':src,'sheet':sheet,'rows':len(df),'cols':list(map(str,df.columns))})
+              for col in df.columns:
+                  s=df[col].astype(str)
+                  for pat in pats:
+                      m=s.str.contains(pat,case=False,regex=False,na=False)
+                      if m.any():
+                          for idx,val in s[m].head(1000).items():
+                              hits.append({'source':src,'sheet':sheet,'row':str(idx),'column':str(col),'pattern':pat,'value':val})
+          for p in root.rglob('*'):
+              if not p.is_file(): continue
+              try:
+                  suf=p.suffix.lower()
+                  if suf=='.csv': scan_df(pd.read_csv(p),str(p))
+                  elif suf in ['.xlsx','.xls']:
+                      x=pd.ExcelFile(p)
+                      for sh in x.sheet_names: scan_df(pd.read_excel(p,sheet_name=sh),str(p),sh)
+                  elif suf in ['.txt','.tsv']:
+                      try: scan_df(pd.read_csv(p,sep='\t'),str(p))
+                      except: pass
+              except Exception as e:
+                  schemas.append({'source':str(p),'error':repr(e)})
+          pd.DataFrame(hits).to_csv(root/'candidate_hits.csv',index=False)
+          pathlib.Path(root/'schemas.json').write_text(json.dumps(schemas,indent=2))
+          print('HITS',len(hits))
+          print(pd.DataFrame(hits).head(200).to_string(index=False) if hits else 'none')
+          PY
+      - name: Attempt overlap-key reconstruction
+        run: |
+          python - <<'PY'
+          import pathlib,pandas as pd,json,re
+          root=pathlib.Path('out'); report=[]
+          tables=[]
+          for p in root.rglob('*.csv'):
+              if p.name=='candidate_hits.csv': continue
+              try: tables.append((str(p),pd.read_csv(p)))
+              except: pass
+          for p in root.rglob('*.xlsx'):
+              try:
+                  x=pd.ExcelFile(p)
+                  for sh in x.sheet_names: tables.append((f'{p}::{sh}',pd.read_excel(p,sheet_name=sh)))
+              except: pass
+          keywords=['date','time','caller','individual','name','id','group','community','utterance','sequence','call','event','context','age','sex']
+          for name,df in tables:
+              cols=list(map(str,df.columns)); keycols=[c for c in cols if any(k in c.lower() for k in keywords)]
+              report.append({'table':name,'rows':len(df),'key_columns':keycols})
+          (root/'join_key_report.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pan-trigram-context-reconstruct
+          path: out/
