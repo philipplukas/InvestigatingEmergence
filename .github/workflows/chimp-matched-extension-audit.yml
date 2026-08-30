@@ -1,0 +1,82 @@
+name: chimp-matched-extension-audit
+on:
+  push:
+    paths:
+      - '.github/workflows/chimp-matched-extension-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q pandas python-docx tabulate
+      - name: Enumerate matched extensions
+        run: |
+          python - <<'PY'
+          import os, json, re
+          import pandas as pd
+          from urllib.request import urlretrieve
+          from docx import Document
+          out='research/primate_transition/chimp_matched_extensions'; os.makedirs(out,exist_ok=True)
+          docx='https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM4_ESM.docx'
+          urlretrieve(docx,'/tmp/data1.docx')
+          doc=Document('/tmp/data1.docx')
+          seqs=[]
+          # table_0 rows have [length,total,unique,list]
+          for t in doc.tables:
+              for row in t.rows:
+                  vals=[c.text.strip() for c in row.cells]
+                  if len(vals)<4: continue
+                  try: L=int(vals[0])
+                  except: continue
+                  if L<3: continue
+                  raw=vals[3]
+                  for s in [x.strip() for x in raw.split(',') if x.strip()]:
+                      toks=s.split('_')
+                      if len(toks)==L: seqs.append((L,s,toks))
+          pairs=[('HO','PH'),('GR','PG')]
+          rows=[]; summaries=[]
+          for A,B in pairs:
+              ab=A+'_'+B; ba=B+'_'+A
+              next_ab={}; next_ba={}; prev_ab={}; prev_ba={}
+              for L,s,toks in seqs:
+                  for i in range(len(toks)-1):
+                      pair=toks[i]+'_'+toks[i+1]
+                      if pair in [ab,ba]:
+                          prev=toks[i-1] if i>0 else None
+                          nxt=toks[i+2] if i+2<len(toks) else None
+                          rows.append({'candidate':ab+'<->'+ba,'orientation':pair,'sequence_length':L,'sequence':s,'position':i,'prev':prev,'next':nxt})
+                          if nxt is not None:
+                              (next_ab if pair==ab else next_ba).setdefault(nxt,[]).append(s)
+                          if prev is not None:
+                              (prev_ab if pair==ab else prev_ba).setdefault(prev,[]).append(s)
+              common_next=sorted(set(next_ab)&set(next_ba)); common_prev=sorted(set(prev_ab)&set(prev_ba))
+              summaries.append({
+                'candidate':ab+'<->'+ba,
+                'AB_next_types':sorted(next_ab),'BA_next_types':sorted(next_ba),'common_next_X':common_next,
+                'AB_prev_types':sorted(prev_ab),'BA_prev_types':sorted(prev_ba),'common_prev_X':common_prev,
+                'n_common_next':len(common_next),'n_common_prev':len(common_prev),
+                'matched_next_examples':{x:{ab:next_ab[x][:5],ba:next_ba[x][:5]} for x in common_next},
+                'matched_prev_examples':{x:{ab:prev_ab[x][:5],ba:prev_ba[x][:5]} for x in common_prev},
+              })
+          occ=pd.DataFrame(rows); occ.to_csv(out+'/all_candidate_occurrences.csv',index=False)
+          flat=[]
+          for s in summaries:
+              flat.append({'candidate':s['candidate'],'AB_next_types':';'.join(s['AB_next_types']),'BA_next_types':';'.join(s['BA_next_types']),'common_next_X':';'.join(s['common_next_X']),'n_common_next':s['n_common_next'],'AB_prev_types':';'.join(s['AB_prev_types']),'BA_prev_types':';'.join(s['BA_prev_types']),'common_prev_X':';'.join(s['common_prev_X']),'n_common_prev':s['n_common_prev']})
+          pd.DataFrame(flat).to_csv(out+'/matched_environment_summary.csv',index=False)
+          open(out+'/summary.json','w').write(json.dumps({'n_unique_sequences_parsed':len(seqs),'pairs':summaries},indent=2))
+          with open(out+'/RESULT.md','w') as f:
+              f.write('# Matched extension audit\n\n')
+              f.write(pd.DataFrame(flat).to_markdown(index=False))
+              f.write('\n\n```json\n'+json.dumps(summaries,indent=2)+'\n```\n')
+          print('PARSED',len(seqs),'UNIQUE SEQUENCES')
+          print(pd.DataFrame(flat).to_string(index=False))
+          print(json.dumps(summaries,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimp-matched-extension-audit
+          path: research/primate_transition/chimp_matched_extensions/
