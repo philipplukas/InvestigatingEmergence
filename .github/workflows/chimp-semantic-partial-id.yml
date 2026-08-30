@@ -1,0 +1,82 @@
+name: chimp-semantic-partial-id
+on:
+  push:
+    paths:
+      - '.github/workflows/chimp-semantic-partial-id.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q pandas scipy
+      - name: Compute targeted marginals and bounds
+        run: |
+          python - <<'PY'
+          import os,json,math
+          import pandas as pd, numpy as np
+          from urllib.request import urlretrieve
+          from scipy.spatial.distance import jensenshannon
+          out='research/primate_transition/chimp_semantic_partial_id'; os.makedirs(out,exist_ok=True)
+          url='https://raw.githubusercontent.com/tozbu/Chimpanzee_bigram_meaning/main/calldata.csv'
+          urlretrieve(url,'/tmp/calldata.csv')
+          d=pd.read_csv('/tmp/calldata.csv')
+          targets=['HO_PH','PH_HO','GR_PG','PG_GR']
+          events=sorted(set(e for c in d.context.astype(str) for e in c.split('_')))
+          rows=[]; probs={}
+          for t in targets:
+              g=d[d['call.name']==t].copy()
+              cnt={e:0 for e in events}
+              for c in g.context.astype(str):
+                  for e in c.split('_'): cnt[e]+=1
+              total=sum(cnt.values())
+              p=np.array([cnt[e] for e in events],dtype=float)
+              if p.sum(): p/=p.sum()
+              probs[t]=p
+              rows.append({'call':t,'n_utterances':len(g),'n_callers':g.caller.nunique(),'date_min':g.date.min() if len(g) else None,'date_max':g.date.max() if len(g) else None,'n_event_tokens':int(total),'support_events':';'.join([e for e in events if cnt[e]>0])})
+          pd.DataFrame(rows).to_csv(out+'/target_bigram_metadata.csv',index=False)
+          # event token distributions
+          long=[]
+          for t,p in probs.items():
+              for e,v in zip(events,p): long.append({'call':t,'event':e,'p_event_token':float(v)})
+          pd.DataFrame(long).to_csv(out+'/standalone_event_marginals.csv',index=False)
+          pairs=[('HO_PH','PH_HO'),('GR_PG','PG_GR')]
+          pairres=[]
+          for a,b in pairs:
+              # scipy returns sqrt(JS nat); convert squared divergence to bits
+              m=(probs[a]+probs[b])/2
+              def kl(p,q):
+                  idx=p>0
+                  return float(np.sum(p[idx]*np.log2(p[idx]/q[idx])))
+              js=.5*kl(probs[a],m)+.5*kl(probs[b],m)
+              tv=.5*float(np.abs(probs[a]-probs[b]).sum())
+              pairres.append({'pair':a+'<->'+b,'JS_bits_standalone':js,'TV_standalone':tv})
+          pd.DataFrame(pairres).to_csv(out+'/standalone_pair_divergence.csv',index=False)
+          # No joint link from exact long sequence occurrence to context is present publicly.
+          # Therefore, without transport assumptions, each missing embedded distribution is any point of simplex Delta^(K-1).
+          K=len(events)
+          bounds=[]
+          matched={'HO_PH<->PH_HO':['GR','PG','PN'],'GR_PG<->PG_GR':['BK','HO','PB','PH','PN','SC']}
+          for pair,xs in matched.items():
+              for x in xs:
+                  bounds.append({'pair':pair,'X':x,'identified_set':'Delta^(K-1) x Delta^(K-1)','K_events':K,'TV_lower':0.0,'TV_upper':1.0,'JS_bits_lower':0.0,'JS_bits_upper':1.0,'reason':'No public occurrence-level join between exact embedded sequence and event/context label'})
+          pd.DataFrame(bounds).to_csv(out+'/embedded_semantic_partial_identification.csv',index=False)
+          summary={'n_rows_2025':len(d),'n_event_types':K,'target_metadata':rows,'standalone_divergences':pairres,'matched_HO_PH_continuations':['GR','PG','PN'],'matched_GR_PG_continuations':['BK','HO','PB','PH','PN','SC'],'embedded_effect_identified':False,'embedded_TV_identified_interval':[0.0,1.0],'embedded_JS_bits_identified_interval':[0.0,1.0],'verdict':'STANDALONE_SEMANTIC_ORDER_EFFECT_QUANTIFIED__MATCHED_EMBEDDED_STRUCTURES_EXIST__PUBLIC_OCCURRENCE_CONTEXT_JOIN_ABSENT__EMBEDDED_SEMANTIC_EFFECT_HAS_ONLY_TRIVIAL_NONPARAMETRIC_BOUNDS'}
+          open(out+'/summary.json','w').write(json.dumps(summary,indent=2))
+          with open(out+'/RESULT.md','w') as f:
+              f.write('# Chimp embedded semantic partial-identification result\n\n')
+              f.write('The public 2025 file contains standalone single calls and bigrams with date, caller, and event context. The public 2022 structural supplement contains exact longer sequence types but no occurrence-level date/caller/context key. Therefore no defensible exact join exists.\n\n')
+              f.write(pd.DataFrame(pairres).to_markdown(index=False))
+              f.write('\n\nFor every matched embedded environment, the nonparametric identified set for the two missing context distributions is the full product simplex. Hence TV and JS have only trivial bounds [0,1].\n\n')
+              f.write('Verdict: `'+summary['verdict']+'`\n')
+          print(json.dumps(summary,indent=2))
+          print(pd.DataFrame(rows).to_string(index=False))
+          print(pd.DataFrame(pairres).to_string(index=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chimp-semantic-partial-id
+          path: research/primate_transition/chimp_semantic_partial_id/
