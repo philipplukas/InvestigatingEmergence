@@ -16,72 +16,48 @@ jobs:
       - name: Download and audit supplements
         run: |
           python - <<'PY'
-          import os, re, json, zipfile
+          import os, json
           import pandas as pd
           from urllib.request import urlretrieve
           from docx import Document
-
-          out='research/primate_transition/chimp_trigram_tensor'
-          os.makedirs(out,exist_ok=True)
+          out='research/primate_transition/chimp_trigram_tensor'; os.makedirs(out,exist_ok=True)
           xlsx='https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM5_ESM.xlsx'
           docx='https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs42003-022-03350-8/MediaObjects/42003_2022_3350_MOESM4_ESM.docx'
-          urlretrieve(xlsx,'/tmp/data2.xlsx')
-          urlretrieve(docx,'/tmp/data1.docx')
+          urlretrieve(xlsx,'/tmp/data2.xlsx'); urlretrieve(docx,'/tmp/data1.docx')
           cand=['HO_PH_HO','HO_PH_PB','HO_PH_PS','PH_HO_PH_PB','HO_PH_PB_PH_HO','GR_PG_GR','GR_PG_PN','HO_GR_PG_GR','GR_PG_PB_PG_GR']
-          paircand=['HO_PH','PH_HO','GR_PG','PG_GR']
-          rows=[]; hits=[]
-          xl=pd.ExcelFile('/tmp/data2.xlsx')
+          paircand=['HO_PH','PH_HO','GR_PG','PG_GR']; queries=cand+paircand
+          rows=[]; hits=[]; xl=pd.ExcelFile('/tmp/data2.xlsx')
           for sh in xl.sheet_names:
               df=pd.read_excel('/tmp/data2.xlsx',sheet_name=sh,header=None)
               txt=df.astype(str)
-              joined='\n'.join(' | '.join(r) for r in txt.values.tolist())
+              joined='\n'.join(' | '.join(map(str,r)) for r in txt.values.tolist())
               cols=' | '.join(map(str,df.iloc[0].tolist())) if len(df) else ''
               rows.append({'source':'Supplementary Data 2 XLSX','sheet':sh,'rows':len(df),'cols':df.shape[1],'first_row':cols[:500]})
-              for q in cand+paircand:
+              for q in queries:
                   if q in joined:
                       for i,row in txt.iterrows():
-                          s=' | '.join(row.tolist())
-                          if q in s:
-                              hits.append({'source':'XLSX','sheet':sh,'query':q,'row_index':int(i),'row_text':s[:2000]})
+                          s=' | '.join(map(str,row.tolist()))
+                          if q in s: hits.append({'source':'XLSX','sheet':sh,'query':q,'row_index':int(i),'row_text':s[:2000]})
           pd.DataFrame(rows).to_csv(out+'/xlsx_sheet_inventory.csv',index=False)
-
           doc=Document('/tmp/data1.docx')
-          text='\n'.join(p.text for p in doc.paragraphs)
           for ti,t in enumerate(doc.tables):
               for ri,row in enumerate(t.rows):
                   s=' | '.join(c.text for c in row.cells)
-                  for q in cand+paircand:
-                      if q in s:
-                          hits.append({'source':'DOCX','sheet':f'table_{ti}','query':q,'row_index':ri,'row_text':s[:2000]})
+                  for q in queries:
+                      if q in s: hits.append({'source':'DOCX','sheet':f'table_{ti}','query':q,'row_index':ri,'row_text':s[:2000]})
           pd.DataFrame(hits).to_csv(out+'/candidate_hits.csv',index=False)
-
-          # schema keyword scan
           keywords=['context','event','caller','individual','date','record','age','season','trigram','sequence']
           schema=[]
           for sh in xl.sheet_names:
               df=pd.read_excel('/tmp/data2.xlsx',sheet_name=sh,header=None)
-              joined=' '.join(df.astype(str).fillna('').values.flatten()).lower()
+              joined=' '.join(map(str,df.values.flatten())).lower()
               schema.append({'sheet':sh,**{k:(k in joined) for k in keywords}})
           pd.DataFrame(schema).to_csv(out+'/schema_keyword_scan.csv',index=False)
-
-          summary={
-            'xlsx_sheets':xl.sheet_names,
-            'n_candidate_hits':len(hits),
-            'candidate_queries_with_hits':sorted(set(h['query'] for h in hits)),
-            'has_context_keyword_any_sheet':any(r['context'] for r in schema),
-            'has_event_keyword_any_sheet':any(r['event'] for r in schema),
-            'has_caller_keyword_any_sheet':any(r['caller'] for r in schema),
-            'has_date_keyword_any_sheet':any(r['date'] for r in schema),
-          }
+          summary={'xlsx_sheets':xl.sheet_names,'n_candidate_hits':len(hits),'candidate_queries_with_hits':sorted(set(h['query'] for h in hits)),'has_context_keyword_any_sheet':any(r['context'] for r in schema),'has_event_keyword_any_sheet':any(r['event'] for r in schema),'has_caller_keyword_any_sheet':any(r['caller'] for r in schema),'has_date_keyword_any_sheet':any(r['date'] for r in schema)}
           open(out+'/summary.json','w').write(json.dumps(summary,indent=2))
           with open(out+'/RESULT.md','w') as f:
-              f.write('# 2022 chimp supplementary tensor audit\n\n')
-              f.write(json.dumps(summary,indent=2))
-              f.write('\n\n## Candidate hits\n\n')
-              if hits:
-                  f.write(pd.DataFrame(hits).to_markdown(index=False))
-              else:
-                  f.write('No candidate strings found in the public supplementary files.')
+              f.write('# 2022 chimp supplementary tensor audit\n\n```json\n'+json.dumps(summary,indent=2)+'\n```\n\n')
+              f.write(pd.DataFrame(hits).to_markdown(index=False) if hits else 'No candidate strings found.')
           print(json.dumps(summary,indent=2))
           if hits: print(pd.DataFrame(hits).to_string(index=False))
           PY
